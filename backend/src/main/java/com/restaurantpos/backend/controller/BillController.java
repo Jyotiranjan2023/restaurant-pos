@@ -1,5 +1,11 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.dto.request.AddPaymentRequest;
+import com.restaurantpos.backend.dto.request.CancelBillRequest;
+import com.restaurantpos.backend.dto.response.PrintableBillResponse;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.restaurantpos.backend.dto.request.ApplyDiscountRequest;
 import com.restaurantpos.backend.dto.response.ApiResponse;
 import com.restaurantpos.backend.dto.response.BillResponse;
@@ -50,5 +56,39 @@ public class BillController {
             @Valid @RequestBody ApplyDiscountRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Discount applied",
                 billService.applyDiscount(id, req)));
+    }
+    
+    @PostMapping("/{id}/payments")
+    public ResponseEntity<ApiResponse<BillResponse>> addPayment(
+            @PathVariable Long id,
+            @Valid @RequestBody AddPaymentRequest req) {
+        return ResponseEntity.ok(ApiResponse.success("Payment added",
+                billService.addPayment(id, req)));
+    }
+
+    @PostMapping("/{id}/settle")
+    public ResponseEntity<ApiResponse<BillResponse>> settle(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Bill settled",
+                billService.settleBillById(id)));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BillResponse>> cancel(
+            @PathVariable Long id,
+            @Valid @RequestBody CancelBillRequest req) {
+        return ResponseEntity.ok(ApiResponse.success("Bill cancelled",
+                billService.cancelBill(id, req)));
+    }
+
+    @GetMapping("/{id}/print")
+    public ResponseEntity<ApiResponse<PrintableBillResponse>> getPrintableBill(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Printable bill fetched",
+                billService.getPrintableBill(id)));
+    }
+
+    @GetMapping(value = "/{id}/print-html", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> getPrintableBillHtml(@PathVariable Long id) {
+        return ResponseEntity.ok(billService.getPrintableBillHtml(id));
     }
 }

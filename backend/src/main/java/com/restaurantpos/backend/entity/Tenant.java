@@ -19,6 +19,8 @@ public class Tenant {
 
     private String phone;
     private String address;
+    private String gstNumber;       // e.g., 21ABCDE1234F1Z5
+    private String fssaiNumber;     // Food license
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -47,4 +49,9 @@ public class Tenant {
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public String getGstNumber() { return gstNumber; }
+    public void setGstNumber(String gstNumber) { this.gstNumber = gstNumber; }
+
+    public String getFssaiNumber() { return fssaiNumber; }
+    public void setFssaiNumber(String fssaiNumber) { this.fssaiNumber = fssaiNumber; }
 }
