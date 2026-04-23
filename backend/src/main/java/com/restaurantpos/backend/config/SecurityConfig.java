@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.config;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import com.restaurantpos.backend.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
