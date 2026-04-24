@@ -32,4 +32,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     	        @Param("tenantId") Long tenantId,
     	        @Param("from") LocalDateTime from,
     	        @Param("to") LocalDateTime to);
+    	List<Order> findByCustomerIdAndTenantIdOrderByCreatedAtDesc(Long customerId, Long tenantId);
 }

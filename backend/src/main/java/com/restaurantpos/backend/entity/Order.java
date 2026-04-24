@@ -36,6 +36,10 @@ public class Order {
     private String customerName;
     private String customerPhone;
     private String customerAddress;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
 
     @Column(precision = 10, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;     // sum of items
@@ -116,4 +120,6 @@ public class Order {
 
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 }

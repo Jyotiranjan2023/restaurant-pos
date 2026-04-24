@@ -16,6 +16,7 @@ import com.restaurantpos.backend.dto.request.CreateOrderRequest;
 import com.restaurantpos.backend.dto.request.OrderItemRequest;
 import com.restaurantpos.backend.dto.response.OrderItemResponse;
 import com.restaurantpos.backend.dto.response.OrderResponse;
+import com.restaurantpos.backend.entity.Customer;
 import com.restaurantpos.backend.entity.Order;
 import com.restaurantpos.backend.entity.OrderItem;
 import com.restaurantpos.backend.entity.Product;
@@ -45,6 +46,7 @@ public class OrderService {
     private final UserRepository userRepo;
     private final TenantRepository tenantRepo;
     private final InventoryService inventoryService;
+    private final CustomerService customerService;
 
     public OrderService(OrderRepository orderRepo,
             ProductRepository productRepo,
@@ -52,14 +54,16 @@ public class OrderService {
             UserRepository userRepo,
             TenantRepository tenantRepo,
             KitchenService kitchenService,
-            InventoryService inventoryService) {   // ← NEW param
+            InventoryService inventoryService,
+            CustomerService customerService) {   // ← NEW
 this.orderRepo = orderRepo;
 this.productRepo = productRepo;
 this.tableRepo = tableRepo;
 this.userRepo = userRepo;
 this.tenantRepo = tenantRepo;
 this.kitchenService = kitchenService;
-this.inventoryService = inventoryService;   // ← NEW assignment
+this.inventoryService = inventoryService;
+this.customerService = customerService;   
 }
 
     @Transactional
@@ -98,6 +102,17 @@ this.inventoryService = inventoryService;   // ← NEW assignment
         order.setCreatedBy(currentUser);
         order.setTenant(tenant);
 
+        // ===== NEW: Auto-link to Customer entity if phone is provided =====
+        if (req.getCustomerPhone() != null && !req.getCustomerPhone().isBlank()) {
+            Customer customer = customerService.findOrCreateByPhone(
+                    req.getCustomerPhone(),
+                    req.getCustomerName(),
+                    req.getCustomerAddress(),
+                    tenantId);
+            order.setCustomer(customer);
+        }
+        // ===== END NEW =====
+
         // Add items
         for (OrderItemRequest itemReq : req.getItems()) {
             OrderItem item = buildOrderItem(itemReq, order, tenantId);
@@ -113,15 +128,14 @@ this.inventoryService = inventoryService;   // ← NEW assignment
             table.setStatus(TableStatus.RUNNING);
             tableRepo.save(table);
         }
- 
-     // Broadcast each item to kitchen AND deduct inventory stock
+
+        // Broadcast each item to kitchen AND deduct inventory stock
         for (OrderItem item : order.getItems()) {
             kitchenService.broadcastNewItem(item);
-            inventoryService.deductStockForOrderItem(item);   // ← NEW: auto-deduct
+            inventoryService.deductStockForOrderItem(item);
         }
         return toResponse(order);
     }
-
     public OrderResponse findById(Long id) {
         Long tenantId = TenantContext.getCurrentTenantId();
         Order order = orderRepo.findByIdAndTenantId(id, tenantId)

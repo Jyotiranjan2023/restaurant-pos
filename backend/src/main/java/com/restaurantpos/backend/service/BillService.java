@@ -1,41 +1,46 @@
 package com.restaurantpos.backend.service;
 
-import com.restaurantpos.backend.dto.request.AddPaymentRequest;
-import com.restaurantpos.backend.dto.request.CancelBillRequest;
-import com.restaurantpos.backend.dto.response.PrintableBillResponse;
-import com.restaurantpos.backend.enums.PaymentMethod;
-import com.restaurantpos.backend.enums.TableStatus;
-import com.restaurantpos.backend.repository.PaymentRepository;
-import com.restaurantpos.backend.repository.RestaurantTableRepository;
-import java.time.LocalDateTime;
-
-import com.restaurantpos.backend.dto.request.ApplyDiscountRequest;
-import com.restaurantpos.backend.dto.response.BillResponse;
-import com.restaurantpos.backend.dto.response.OrderItemResponse;
-import com.restaurantpos.backend.dto.response.PaymentResponse;
-import com.restaurantpos.backend.entity.*;
-import com.restaurantpos.backend.enums.BillStatus;
-import com.restaurantpos.backend.enums.DiscountType;
-import com.restaurantpos.backend.enums.OrderItemStatus;
-import com.restaurantpos.backend.enums.OrderStatus;
-import com.restaurantpos.backend.exception.BadRequestException;
-import com.restaurantpos.backend.exception.ResourceNotFoundException;
-import com.restaurantpos.backend.repository.BillRepository;
-import com.restaurantpos.backend.repository.OrderRepository;
-import com.restaurantpos.backend.repository.TenantRepository;
-import com.restaurantpos.backend.repository.UserRepository;
-import com.restaurantpos.backend.security.TenantContext;
-import com.restaurantpos.backend.security.UserPrincipal;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.restaurantpos.backend.dto.request.AddPaymentRequest;
+import com.restaurantpos.backend.dto.request.ApplyDiscountRequest;
+import com.restaurantpos.backend.dto.request.CancelBillRequest;
+import com.restaurantpos.backend.dto.response.BillResponse;
+import com.restaurantpos.backend.dto.response.OrderItemResponse;
+import com.restaurantpos.backend.dto.response.PaymentResponse;
+import com.restaurantpos.backend.dto.response.PrintableBillResponse;
+import com.restaurantpos.backend.entity.Bill;
+import com.restaurantpos.backend.entity.Order;
+import com.restaurantpos.backend.entity.OrderItem;
+import com.restaurantpos.backend.entity.Payment;
+import com.restaurantpos.backend.entity.RestaurantTable;
+import com.restaurantpos.backend.entity.Tenant;
+import com.restaurantpos.backend.entity.User;
+import com.restaurantpos.backend.enums.BillStatus;
+import com.restaurantpos.backend.enums.DiscountType;
+import com.restaurantpos.backend.enums.OrderItemStatus;
+import com.restaurantpos.backend.enums.OrderStatus;
+import com.restaurantpos.backend.enums.TableStatus;
+import com.restaurantpos.backend.exception.BadRequestException;
+import com.restaurantpos.backend.exception.ResourceNotFoundException;
+import com.restaurantpos.backend.repository.BillRepository;
+import com.restaurantpos.backend.repository.OrderRepository;
+import com.restaurantpos.backend.repository.PaymentRepository;
+import com.restaurantpos.backend.repository.RestaurantTableRepository;
+import com.restaurantpos.backend.repository.TenantRepository;
+import com.restaurantpos.backend.repository.UserRepository;
+import com.restaurantpos.backend.security.TenantContext;
+import com.restaurantpos.backend.security.UserPrincipal;
 
 @Service
 public class BillService {
@@ -46,19 +51,22 @@ public class BillService {
     private final TenantRepository tenantRepo;
     private final PaymentRepository paymentRepo;
     private final RestaurantTableRepository tableRepo;
+    private final CustomerService customerService;
 
     public BillService(BillRepository billRepo,
             OrderRepository orderRepo,
             UserRepository userRepo,
             TenantRepository tenantRepo,
             PaymentRepository paymentRepo,
-            RestaurantTableRepository tableRepo) {
+            RestaurantTableRepository tableRepo,
+            CustomerService customerService) {   // ← NEW
 this.billRepo = billRepo;
 this.orderRepo = orderRepo;
 this.userRepo = userRepo;
 this.tenantRepo = tenantRepo;
 this.paymentRepo = paymentRepo;
 this.tableRepo = tableRepo;
+this.customerService = customerService;   // ← NEW
 }
     /**
      * Generate a bill from a RUNNING order.
@@ -416,6 +424,12 @@ this.tableRepo = tableRepo;
         }
 
         orderRepo.save(order);
+
+        // ===== NEW: Update customer aggregates (visit count, total spent, last visit) =====
+        if (order.getCustomer() != null) {
+            customerService.recordVisit(order.getCustomer(), bill.getTotalAmount());
+        }
+        // ===== END NEW =====
     }
 
     
