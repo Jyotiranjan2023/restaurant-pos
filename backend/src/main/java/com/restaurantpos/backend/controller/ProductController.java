@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.dto.request.AvailabilityRequest;
 import com.restaurantpos.backend.dto.request.ProductRequest;
 import com.restaurantpos.backend.dto.response.ApiResponse;
 import com.restaurantpos.backend.dto.response.ProductResponse;
@@ -61,4 +62,13 @@ public class ProductController {
         productService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Product deleted", null));
     }
+    @PatchMapping("/{id}/availability")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CHEF')")
+    public ResponseEntity<ApiResponse<ProductResponse>> updateAvailability(
+            @PathVariable Long id,
+            @Valid @RequestBody AvailabilityRequest req) {
+        return ResponseEntity.ok(ApiResponse.success("Availability updated",
+                productService.updateAvailability(id, req.getAvailable())));
+    }
+    
 }

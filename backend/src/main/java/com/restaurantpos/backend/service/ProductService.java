@@ -121,4 +121,19 @@ public class ProductService {
         r.setActive(p.getActive());
         return r;
     }
+    
+    /**
+     * Toggle product availability (sold-out flag).
+     * Does NOT soft-delete the product — just marks it unavailable temporarily.
+     */
+    @Transactional
+    public ProductResponse updateAvailability(Long id, Boolean available) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        Product product = productRepo.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        product.setAvailable(available);
+        return toResponse(productRepo.save(product));
+    }
 }
