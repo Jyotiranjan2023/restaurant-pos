@@ -1,23 +1,5 @@
 package com.restaurantpos.backend.service;
 
-import com.restaurantpos.backend.dto.request.CreateOrderRequest;
-import com.restaurantpos.backend.dto.request.AddItemsRequest;
-import com.restaurantpos.backend.dto.request.OrderItemRequest;
-import com.restaurantpos.backend.dto.response.OrderItemResponse;
-import com.restaurantpos.backend.dto.response.OrderResponse;
-import com.restaurantpos.backend.entity.*;
-import com.restaurantpos.backend.enums.OrderStatus;
-import com.restaurantpos.backend.enums.OrderType;
-import com.restaurantpos.backend.enums.TableStatus;
-import com.restaurantpos.backend.exception.BadRequestException;
-import com.restaurantpos.backend.exception.ResourceNotFoundException;
-import com.restaurantpos.backend.repository.*;
-import com.restaurantpos.backend.security.TenantContext;
-import com.restaurantpos.backend.security.UserPrincipal;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.restaurantpos.backend.entity.OrderItem;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -25,6 +7,33 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.restaurantpos.backend.dto.request.AddItemsRequest;
+import com.restaurantpos.backend.dto.request.CreateOrderRequest;
+import com.restaurantpos.backend.dto.request.OrderItemRequest;
+import com.restaurantpos.backend.dto.response.OrderItemResponse;
+import com.restaurantpos.backend.dto.response.OrderResponse;
+import com.restaurantpos.backend.entity.Order;
+import com.restaurantpos.backend.entity.OrderItem;
+import com.restaurantpos.backend.entity.Product;
+import com.restaurantpos.backend.entity.RestaurantTable;
+import com.restaurantpos.backend.entity.Tenant;
+import com.restaurantpos.backend.entity.User;
+import com.restaurantpos.backend.enums.OrderStatus;
+import com.restaurantpos.backend.enums.OrderType;
+import com.restaurantpos.backend.enums.TableStatus;
+import com.restaurantpos.backend.exception.BadRequestException;
+import com.restaurantpos.backend.exception.ResourceNotFoundException;
+import com.restaurantpos.backend.repository.OrderRepository;
+import com.restaurantpos.backend.repository.ProductRepository;
+import com.restaurantpos.backend.repository.RestaurantTableRepository;
+import com.restaurantpos.backend.repository.TenantRepository;
+import com.restaurantpos.backend.repository.UserRepository;
+import com.restaurantpos.backend.security.TenantContext;
+import com.restaurantpos.backend.security.UserPrincipal;
 
 @Service
 public class OrderService {
@@ -35,19 +44,22 @@ public class OrderService {
     private final RestaurantTableRepository tableRepo;
     private final UserRepository userRepo;
     private final TenantRepository tenantRepo;
+    private final InventoryService inventoryService;
 
     public OrderService(OrderRepository orderRepo,
             ProductRepository productRepo,
             RestaurantTableRepository tableRepo,
             UserRepository userRepo,
             TenantRepository tenantRepo,
-            KitchenService kitchenService) {
+            KitchenService kitchenService,
+            InventoryService inventoryService) {   // ← NEW param
 this.orderRepo = orderRepo;
 this.productRepo = productRepo;
 this.tableRepo = tableRepo;
 this.userRepo = userRepo;
 this.tenantRepo = tenantRepo;
 this.kitchenService = kitchenService;
+this.inventoryService = inventoryService;   // ← NEW assignment
 }
 
     @Transactional
@@ -101,11 +113,12 @@ this.kitchenService = kitchenService;
             table.setStatus(TableStatus.RUNNING);
             tableRepo.save(table);
         }
-     // Broadcast each item to kitchen
+ 
+     // Broadcast each item to kitchen AND deduct inventory stock
         for (OrderItem item : order.getItems()) {
             kitchenService.broadcastNewItem(item);
+            inventoryService.deductStockForOrderItem(item);   // ← NEW: auto-deduct
         }
-
         return toResponse(order);
     }
 
