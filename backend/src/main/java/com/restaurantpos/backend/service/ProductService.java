@@ -1,5 +1,11 @@
 package com.restaurantpos.backend.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.restaurantpos.backend.dto.request.ProductRequest;
 import com.restaurantpos.backend.dto.response.ProductResponse;
 import com.restaurantpos.backend.entity.Category;
@@ -10,11 +16,6 @@ import com.restaurantpos.backend.repository.CategoryRepository;
 import com.restaurantpos.backend.repository.ProductRepository;
 import com.restaurantpos.backend.repository.TenantRepository;
 import com.restaurantpos.backend.security.TenantContext;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -22,14 +23,16 @@ public class ProductService {
     private final ProductRepository productRepo;
     private final CategoryRepository categoryRepo;
     private final TenantRepository tenantRepo;
-
+    private final FileStorageService fileStorageService;
     public ProductService(ProductRepository productRepo,
-                          CategoryRepository categoryRepo,
-                          TenantRepository tenantRepo) {
-        this.productRepo = productRepo;
-        this.categoryRepo = categoryRepo;
-        this.tenantRepo = tenantRepo;
-    }
+            CategoryRepository categoryRepo,
+            TenantRepository tenantRepo,
+            FileStorageService fileStorageService) {   // ← NEW
+this.productRepo = productRepo;
+this.categoryRepo = categoryRepo;
+this.tenantRepo = tenantRepo;
+this.fileStorageService = fileStorageService;   // ← NEW
+}
 
     @Transactional
     public ProductResponse create(ProductRequest req) {
@@ -134,6 +137,42 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         product.setAvailable(available);
+        return toResponse(productRepo.save(product));
+    }
+    
+    @Transactional
+    public ProductResponse uploadImage(Long productId, org.springframework.web.multipart.MultipartFile file) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        Product product = productRepo.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        // Delete old image if exists (cleanup)
+        String oldUrl = product.getImageUrl();
+        if (oldUrl != null && !oldUrl.isBlank()) {
+            fileStorageService.deleteProductImage(oldUrl);
+        }
+
+        // Save new image
+        String newUrl = fileStorageService.saveProductImage(file);
+        product.setImageUrl(newUrl);
+
+        return toResponse(productRepo.save(product));
+    }
+
+    @Transactional
+    public ProductResponse deleteImage(Long productId) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        Product product = productRepo.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        String oldUrl = product.getImageUrl();
+        if (oldUrl != null && !oldUrl.isBlank()) {
+            fileStorageService.deleteProductImage(oldUrl);
+        }
+
+        product.setImageUrl(null);
         return toResponse(productRepo.save(product));
     }
 }

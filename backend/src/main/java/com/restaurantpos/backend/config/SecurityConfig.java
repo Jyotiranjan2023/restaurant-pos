@@ -36,9 +36,21 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-            		.requestMatchers("/api/auth/register-restaurant", "/api/auth/login").permitAll()
-            		.requestMatchers("/ws/**").permitAll()
+
+                // ✅ PUBLIC ENDPOINTS
+                .requestMatchers("/api/auth/register-restaurant", "/api/auth/login").permitAll()
+                .requestMatchers("/ws/**").permitAll()
+
+                // ✅ VERY IMPORTANT (FIX YOUR ISSUE)
+                .requestMatchers("/uploads/**").permitAll()
+
+                // (optional but good practice)
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
+                // preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // 🔒 everything else secured
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

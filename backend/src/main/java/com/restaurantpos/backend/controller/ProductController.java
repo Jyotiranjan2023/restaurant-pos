@@ -1,5 +1,7 @@
 package com.restaurantpos.backend.controller;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import com.restaurantpos.backend.dto.request.AvailabilityRequest;
 import com.restaurantpos.backend.dto.request.ProductRequest;
 import com.restaurantpos.backend.dto.response.ApiResponse;
@@ -69,6 +71,21 @@ public class ProductController {
             @Valid @RequestBody AvailabilityRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Availability updated",
                 productService.updateAvailability(id, req.getAvailable())));
+    }
+    @PostMapping(value = "/{id}/image", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ProductResponse>> uploadImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(ApiResponse.success("Image uploaded",
+                productService.uploadImage(id, file)));
+    }
+
+    @DeleteMapping("/{id}/image")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ProductResponse>> deleteImage(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Image removed",
+                productService.deleteImage(id)));
     }
     
 }
