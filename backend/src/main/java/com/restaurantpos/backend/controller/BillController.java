@@ -91,4 +91,18 @@ public class BillController {
     public ResponseEntity<String> getPrintableBillHtml(@PathVariable Long id) {
         return ResponseEntity.ok(billService.getPrintableBillHtml(id));
     }
+    @DeleteMapping("/{id}/payments/{paymentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BillResponse>> removePayment(
+            @PathVariable Long id,
+            @PathVariable Long paymentId) {
+        return ResponseEntity.ok(ApiResponse.success("Payment removed",
+                billService.removePayment(id, paymentId)));
+    }
+
+    @GetMapping("/today")
+    public ResponseEntity<ApiResponse<List<BillResponse>>> getTodaysBills() {
+        return ResponseEntity.ok(ApiResponse.success("Today's bills fetched",
+                billService.findTodaysBills()));
+    }
 }

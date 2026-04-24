@@ -12,10 +12,10 @@ public class AddPaymentRequest {
     private PaymentMethod method;
 
     @NotNull(message = "Amount is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Amount must be greater than 0")
+    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private BigDecimal amount;
 
-    private String reference;   // UPI txn id, card last 4 digits, etc.
+    private String reference;   // optional: UPI txn id, card last 4 digits, etc.
     private String notes;
 
     public PaymentMethod getMethod() { return method; }

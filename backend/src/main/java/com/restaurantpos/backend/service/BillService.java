@@ -418,6 +418,9 @@ this.tableRepo = tableRepo;
         orderRepo.save(order);
     }
 
+    
+    
+    
     private PrintableBillResponse toPrintableResponse(Bill b) {
         PrintableBillResponse p = new PrintableBillResponse();
 
@@ -601,5 +604,78 @@ this.tableRepo = tableRepo;
     private String safe(String s) {
         if (s == null) return "";
         return s.replace("<", "&lt;").replace(">", "&gt;");
+    }
+    /**
+     * Remove a payment from a bill (ADMIN-only).
+     * Useful when a payment was recorded incorrectly.
+     * If the bill was settled, re-opens the order and table.
+     */
+    @Transactional
+    public BillResponse removePayment(Long billId, Long paymentId) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        Bill bill = billRepo.findByIdAndTenantId(billId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found"));
+
+        if (bill.getStatus() == BillStatus.CANCELLED)
+            throw new BadRequestException("Cannot modify payments on a cancelled bill");
+
+        Payment payment = paymentRepo.findByIdAndBillId(paymentId, billId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found in this bill"));
+
+        // If bill was settled, we need to re-open it
+        boolean wasSettled = (bill.getStatus() == BillStatus.PAID);
+
+        bill.getPayments().remove(payment);
+        paymentRepo.delete(payment);
+
+        // Recalculate amounts
+        bill.setPaidAmount(bill.getPaidAmount().subtract(payment.getAmount()));
+        bill.setDueAmount(bill.getTotalAmount().subtract(bill.getPaidAmount())
+                .setScale(2, RoundingMode.HALF_UP));
+
+        // Determine new status
+        if (bill.getPaidAmount().compareTo(BigDecimal.ZERO) == 0) {
+            bill.setStatus(BillStatus.PENDING);
+        } else {
+            bill.setStatus(BillStatus.PARTIALLY_PAID);
+        }
+
+        // If bill was previously settled, undo everything
+        if (wasSettled) {
+            bill.setSettledAt(null);
+
+            // Re-open the order
+            Order order = bill.getOrder();
+            order.setStatus(OrderStatus.RUNNING);
+            order.setCompletedAt(null);
+            orderRepo.save(order);
+
+            // Re-occupy the table
+            if (order.getTable() != null) {
+                RestaurantTable table = order.getTable();
+                table.setStatus(TableStatus.RUNNING);
+                tableRepo.save(table);
+            }
+        }
+
+        bill = billRepo.save(bill);
+        return toResponse(bill);
+    }
+
+    /**
+     * Get today's bills for a quick sales snapshot.
+     * Used by admin dashboard.
+     */
+    public List<BillResponse> findTodaysBills() {
+        Long tenantId = TenantContext.getCurrentTenantId();
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+
+        return billRepo.findByTenantIdOrderByCreatedAtDesc(tenantId).stream()
+                .filter(b -> !b.getCreatedAt().isBefore(startOfDay))
+                .filter(b -> !b.getCreatedAt().isAfter(endOfDay))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 }
