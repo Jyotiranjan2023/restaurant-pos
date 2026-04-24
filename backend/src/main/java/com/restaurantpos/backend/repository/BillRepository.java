@@ -1,5 +1,10 @@
 package com.restaurantpos.backend.repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import com.restaurantpos.backend.entity.Bill;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,4 +20,12 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     Optional<Bill> findByOrderIdAndTenantId(Long orderId, Long tenantId);
 
     long countByTenantIdAndBillNumberStartingWith(Long tenantId, String prefix);
+    @Query("SELECT b FROM Bill b " +
+    	       "WHERE b.tenant.id = :tenantId " +
+    	       "AND b.status = com.restaurantpos.backend.enums.BillStatus.PAID " +
+    	       "AND b.settledAt >= :from AND b.settledAt <= :to")
+    	List<Bill> findPaidByTenantAndDateRange(
+    	        @Param("tenantId") Long tenantId,
+    	        @Param("from") LocalDateTime from,
+    	        @Param("to") LocalDateTime to);
 }
