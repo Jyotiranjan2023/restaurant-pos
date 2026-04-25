@@ -45,7 +45,9 @@ import com.restaurantpos.backend.security.UserPrincipal;
 @Service
 public class BillService {
 
+	
 	private final CouponService couponService;
+	private final NotificationService notificationService;
     private final BillRepository billRepo;
     private final OrderRepository orderRepo;
     private final UserRepository userRepo;
@@ -62,7 +64,8 @@ public class BillService {
             PaymentRepository paymentRepo,
             RestaurantTableRepository tableRepo,
             CustomerService customerService,
-            CouponService couponService) {   // ← NEW
+            CouponService couponService,
+    NotificationService notificationService){   // ← NEW
 this.billRepo = billRepo;
 this.orderRepo = orderRepo;
 this.userRepo = userRepo;
@@ -70,7 +73,8 @@ this.tenantRepo = tenantRepo;
 this.paymentRepo = paymentRepo;
 this.tableRepo = tableRepo;
 this.customerService = customerService;
-this.couponService = couponService;   // ← NEW
+this.couponService = couponService; 
+this.notificationService = notificationService;   // ← NEW// ← NEW
 }
     /**
      * Generate a bill from a RUNNING order.
@@ -375,6 +379,19 @@ this.couponService = couponService;   // ← NEW
 
         orderRepo.save(order);
         bill = billRepo.save(bill);
+
+        // ===== NEW: Notification — bill cancelled =====
+        notificationService.notifyForTenant(
+                tenantId,
+                com.restaurantpos.backend.enums.NotificationType.BILL_CANCELLED,
+                com.restaurantpos.backend.enums.NotificationSeverity.WARNING,
+                "Bill Cancelled",
+                "Bill " + bill.getBillNumber() + " was cancelled. Reason: " +
+                        (req.getReason() != null ? req.getReason() : "Not specified"),
+                "/bills/" + bill.getId()
+        );
+        // ===== END NEW =====
+
         return toResponse(bill);
     }
 

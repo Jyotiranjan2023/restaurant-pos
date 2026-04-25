@@ -32,20 +32,23 @@ public class InventoryService {
     private final ProductRepository productRepo;
     private final TenantRepository tenantRepo;
     private final UserRepository userRepo;
+    private final NotificationService notificationService;
 
     public InventoryService(IngredientRepository ingredientRepo,
-                            RecipeItemRepository recipeRepo,
-                            StockUsageLogRepository logRepo,
-                            ProductRepository productRepo,
-                            TenantRepository tenantRepo,
-                            UserRepository userRepo) {
-        this.ingredientRepo = ingredientRepo;
-        this.recipeRepo = recipeRepo;
-        this.logRepo = logRepo;
-        this.productRepo = productRepo;
-        this.tenantRepo = tenantRepo;
-        this.userRepo = userRepo;
-    }
+            RecipeItemRepository recipeRepo,
+            StockUsageLogRepository logRepo,
+            ProductRepository productRepo,
+            TenantRepository tenantRepo,
+            UserRepository userRepo,
+            NotificationService notificationService) {   // ← NEW
+this.ingredientRepo = ingredientRepo;
+this.recipeRepo = recipeRepo;
+this.logRepo = logRepo;
+this.productRepo = productRepo;
+this.tenantRepo = tenantRepo;
+this.userRepo = userRepo;
+this.notificationService = notificationService;   // ← NEW
+}
 
     // ========== INGREDIENT CRUD ==========
 
@@ -250,6 +253,26 @@ public class InventoryService {
             logStockChange(ing, UsageLogType.CONSUMPTION, totalNeeded.negate(),
                     "Used for " + orderItem.getItemName(), performedBy,
                     orderItem.getOrder(), orderItem, tenant);
+            
+            
+         // Trigger low-stock notification (only when crossing threshold downward)
+            BigDecimal threshold = ing.getLowStockThreshold();
+            if (threshold != null && threshold.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal previousStock = newStock.add(totalNeeded);
+                boolean wasAboveThreshold = previousStock.compareTo(threshold) > 0;
+                boolean nowAtOrBelowThreshold = newStock.compareTo(threshold) <= 0;
+                
+                if (wasAboveThreshold && nowAtOrBelowThreshold) {
+                    notificationService.notifyForTenant(
+                        tenant.getId(),
+                        com.restaurantpos.backend.enums.NotificationType.LOW_STOCK,
+                        com.restaurantpos.backend.enums.NotificationSeverity.WARNING,
+                        "Low Stock Alert",
+                        ing.getName() + " is running low (" + newStock + " " + ing.getUnit() + " remaining)",
+                        "/inventory/" + ing.getId()
+                    );
+                }
+            }
         }
     }
 

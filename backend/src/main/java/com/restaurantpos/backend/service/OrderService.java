@@ -57,29 +57,31 @@ public class OrderService {
     private final ProductVariantRepository variantRepo;
     private final ProductAddonRepository addonRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final NotificationService notificationService;
 
     public OrderService(OrderRepository orderRepo,
-                        ProductRepository productRepo,
-                        RestaurantTableRepository tableRepo,
-                        UserRepository userRepo,
-                        TenantRepository tenantRepo,
-                        KitchenService kitchenService,
-                        InventoryService inventoryService,
-                        CustomerService customerService,
-                        ProductVariantRepository variantRepo,
-                        ProductAddonRepository addonRepo) {
-        this.orderRepo = orderRepo;
-        this.productRepo = productRepo;
-        this.tableRepo = tableRepo;
-        this.userRepo = userRepo;
-        this.tenantRepo = tenantRepo;
-        this.kitchenService = kitchenService;
-        this.inventoryService = inventoryService;
-        this.customerService = customerService;
-        this.variantRepo = variantRepo;
-        this.addonRepo = addonRepo;
-    }
-
+            ProductRepository productRepo,
+            RestaurantTableRepository tableRepo,
+            UserRepository userRepo,
+            TenantRepository tenantRepo,
+            KitchenService kitchenService,
+            InventoryService inventoryService,
+            CustomerService customerService,
+            ProductVariantRepository variantRepo,
+            ProductAddonRepository addonRepo,
+            NotificationService notificationService) {   // ← NEW
+this.orderRepo = orderRepo;
+this.productRepo = productRepo;
+this.tableRepo = tableRepo;
+this.userRepo = userRepo;
+this.tenantRepo = tenantRepo;
+this.kitchenService = kitchenService;
+this.inventoryService = inventoryService;
+this.customerService = customerService;
+this.variantRepo = variantRepo;
+this.addonRepo = addonRepo;
+this.notificationService = notificationService;   // ← NEW
+}
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest req) {
         UserPrincipal principal = TenantContext.getCurrentUser();
@@ -142,11 +144,23 @@ public class OrderService {
             tableRepo.save(table);
         }
 
-        // Broadcast each item to kitchen AND deduct inventory stock
+     // Broadcast each item to kitchen AND deduct inventory stock
         for (OrderItem item : order.getItems()) {
             kitchenService.broadcastNewItem(item);
             inventoryService.deductStockForOrderItem(item);
         }
+
+        // ===== NEW: Notification — new order received =====
+        notificationService.notifyForTenant(
+                tenantId,
+                com.restaurantpos.backend.enums.NotificationType.NEW_ORDER,
+                com.restaurantpos.backend.enums.NotificationSeverity.INFO,
+                "New Order #" + order.getOrderNumber(),
+                "Type: " + order.getOrderType() + ", Total: ₹" + order.getTotalAmount(),
+                "/orders/" + order.getId()
+        );
+        // ===== END NEW =====
+
         return toResponse(order);
     }
 
