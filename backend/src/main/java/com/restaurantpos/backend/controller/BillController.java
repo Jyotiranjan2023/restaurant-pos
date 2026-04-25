@@ -105,4 +105,17 @@ public class BillController {
         return ResponseEntity.ok(ApiResponse.success("Today's bills fetched",
                 billService.findTodaysBills()));
     }
+    @PostMapping("/{billId}/apply-coupon")
+    public ResponseEntity<ApiResponse<BillResponse>> applyCoupon(
+            @PathVariable Long billId,
+            @Valid @RequestBody com.restaurantpos.backend.dto.request.ApplyCouponRequest req) {
+        return ResponseEntity.ok(ApiResponse.success("Coupon applied",
+                billService.applyCoupon(billId, req.getCode())));
+    }
+
+    @DeleteMapping("/{billId}/coupon")
+    public ResponseEntity<ApiResponse<BillResponse>> removeCoupon(@PathVariable Long billId) {
+        return ResponseEntity.ok(ApiResponse.success("Coupon removed",
+                billService.removeCoupon(billId)));
+    }
 }

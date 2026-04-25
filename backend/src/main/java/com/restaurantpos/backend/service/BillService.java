@@ -45,6 +45,7 @@ import com.restaurantpos.backend.security.UserPrincipal;
 @Service
 public class BillService {
 
+	private final CouponService couponService;
     private final BillRepository billRepo;
     private final OrderRepository orderRepo;
     private final UserRepository userRepo;
@@ -52,6 +53,7 @@ public class BillService {
     private final PaymentRepository paymentRepo;
     private final RestaurantTableRepository tableRepo;
     private final CustomerService customerService;
+  
 
     public BillService(BillRepository billRepo,
             OrderRepository orderRepo,
@@ -59,14 +61,16 @@ public class BillService {
             TenantRepository tenantRepo,
             PaymentRepository paymentRepo,
             RestaurantTableRepository tableRepo,
-            CustomerService customerService) {   // ← NEW
+            CustomerService customerService,
+            CouponService couponService) {   // ← NEW
 this.billRepo = billRepo;
 this.orderRepo = orderRepo;
 this.userRepo = userRepo;
 this.tenantRepo = tenantRepo;
 this.paymentRepo = paymentRepo;
 this.tableRepo = tableRepo;
-this.customerService = customerService;   // ← NEW
+this.customerService = customerService;
+this.couponService = couponService;   // ← NEW
 }
     /**
      * Generate a bill from a RUNNING order.
@@ -206,6 +210,7 @@ this.customerService = customerService;   // ← NEW
         r.setDiscountAmount(b.getDiscountAmount());
         r.setDiscountType(b.getDiscountType());
         r.setDiscountValue(b.getDiscountValue());
+        r.setCouponCode(b.getCouponCode());
         r.setTotalAmount(b.getTotalAmount());
         r.setPaidAmount(b.getPaidAmount());
         r.setDueAmount(b.getDueAmount());
@@ -691,5 +696,81 @@ this.customerService = customerService;   // ← NEW
                 .filter(b -> !b.getCreatedAt().isAfter(endOfDay))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+    @Transactional
+    public BillResponse applyCoupon(Long billId, String code) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        Bill bill = billRepo.findByIdAndTenantId(billId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found"));
+
+        if (bill.getStatus() == com.restaurantpos.backend.enums.BillStatus.PAID)
+            throw new BadRequestException("Cannot apply coupon to a fully paid bill");
+        if (bill.getStatus() == com.restaurantpos.backend.enums.BillStatus.CANCELLED)
+            throw new BadRequestException("Cannot apply coupon to a cancelled bill");
+
+        // If a coupon was already applied, reverse its usage first
+        if (bill.getCoupon() != null) {
+            couponService.reverseUsage(bill.getCoupon(), bill);
+        }
+
+        // Get the customer (if order has one)
+        com.restaurantpos.backend.entity.Customer customer = bill.getOrder().getCustomer();
+
+        // Validate and calculate discount
+        BigDecimal discountAmount = couponService.validateAndCalculate(
+                code, bill.getSubtotal().add(bill.getGstAmount()), customer, tenantId);
+
+        // Find the coupon entity
+        com.restaurantpos.backend.entity.Coupon coupon =
+                couponService.findCouponEntityByCode(code, tenantId);
+
+        // Apply to bill
+        bill.setCoupon(coupon);
+        bill.setCouponCode(coupon.getCode());
+        bill.setDiscountType(null);   // coupon overrides manual discount type
+        bill.setDiscountValue(coupon.getValue());
+        bill.setDiscountAmount(discountAmount);
+
+        BigDecimal baseAmount = bill.getSubtotal().add(bill.getGstAmount());
+        bill.setTotalAmount(baseAmount.subtract(discountAmount).setScale(2, RoundingMode.HALF_UP));
+        bill.setDueAmount(bill.getTotalAmount().subtract(bill.getPaidAmount()));
+
+        bill = billRepo.save(bill);
+
+        // Record usage
+        couponService.recordUsage(coupon, bill, customer, discountAmount);
+
+        return toResponse(bill);
+    }
+
+    @Transactional
+    public BillResponse removeCoupon(Long billId) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        Bill bill = billRepo.findByIdAndTenantId(billId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found"));
+
+        if (bill.getCoupon() == null)
+            throw new BadRequestException("No coupon applied to this bill");
+
+        if (bill.getStatus() == com.restaurantpos.backend.enums.BillStatus.PAID)
+            throw new BadRequestException("Cannot remove coupon from a paid bill");
+
+        // Reverse usage
+        couponService.reverseUsage(bill.getCoupon(), bill);
+
+        // Reset coupon-related fields
+        bill.setCoupon(null);
+        bill.setCouponCode(null);
+        bill.setDiscountValue(null);
+        bill.setDiscountAmount(BigDecimal.ZERO);
+
+        // Recalculate totals
+        BigDecimal baseAmount = bill.getSubtotal().add(bill.getGstAmount());
+        bill.setTotalAmount(baseAmount.setScale(2, RoundingMode.HALF_UP));
+        bill.setDueAmount(bill.getTotalAmount().subtract(bill.getPaidAmount()));
+
+        return toResponse(billRepo.save(bill));
     }
 }

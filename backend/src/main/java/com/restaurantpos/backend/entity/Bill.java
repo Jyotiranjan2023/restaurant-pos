@@ -66,6 +66,13 @@ public class Bill {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon coupon;   // applied coupon (nullable)
+
+    @Column(name = "coupon_code")
+    private String couponCode;   // snapshot
 
     private LocalDateTime settledAt;
     private LocalDateTime cancelledAt;
@@ -128,4 +135,9 @@ public class Bill {
 
     public String getCancellationReason() { return cancellationReason; }
     public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
+    public Coupon getCoupon() { return coupon; }
+    public void setCoupon(Coupon coupon) { this.coupon = coupon; }
+
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
 }

@@ -28,6 +28,7 @@ public class BillResponse {
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
     private BigDecimal dueAmount;
+    private String couponCode;
 
     private BillStatus status;
     private String generatedByUsername;
@@ -108,4 +109,7 @@ public class BillResponse {
 
     public List<PaymentResponse> getPayments() { return payments; }
     public void setPayments(List<PaymentResponse> payments) { this.payments = payments; }
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+	
 }
