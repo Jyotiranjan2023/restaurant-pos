@@ -38,7 +38,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // ✅ PUBLIC ENDPOINTS
-                .requestMatchers("/api/auth/register-restaurant", "/api/auth/login").permitAll()
+            		.requestMatchers(
+            			    "/api/auth/register-restaurant",
+            			    "/api/auth/login",
+            			    "/api/auth/forgot-password",
+            			    "/api/auth/reset-password"
+            			).permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 
 
