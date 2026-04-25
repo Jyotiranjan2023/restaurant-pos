@@ -28,6 +28,7 @@ public class FileStorageService {
     private long maxSizeMb;
 
     private Path productImagesPath;
+    private Path logoImagesPath;
 
     /**
      * Runs once at startup — creates the upload folders if they don't exist.
@@ -37,6 +38,9 @@ public class FileStorageService {
         try {
             this.productImagesPath = Paths.get(uploadDir, "products").toAbsolutePath().normalize();
             Files.createDirectories(productImagesPath);
+            
+            this.logoImagesPath = Paths.get(uploadDir, "logos").toAbsolutePath().normalize();   // ← NEW
+            Files.createDirectories(logoImagesPath);                                              // ← NEW
         } catch (IOException e) {
             throw new RuntimeException("Failed to create upload directories", e);
         }
@@ -81,6 +85,37 @@ public class FileStorageService {
         } catch (Exception e) {
             // Log but don't fail — deletion is cleanup, not critical
             System.err.println("Failed to delete file: " + imageUrl + " — " + e.getMessage());
+        }
+    }
+    
+    public String saveLogo(MultipartFile file) {
+        validateFile(file);
+
+        try {
+            String extension = getExtension(file.getOriginalFilename());
+            String filename = UUID.randomUUID() + "." + extension;
+            Path targetPath = logoImagesPath.resolve(filename);
+
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return "/uploads/logos/" + filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save logo", e);
+        }
+    }
+
+    public void deleteLogo(String logoUrl) {
+        if (logoUrl == null || logoUrl.isBlank()) return;
+
+        try {
+            String filename = Paths.get(logoUrl).getFileName().toString();
+            Path filePath = logoImagesPath.resolve(filename);
+
+            if (filePath.normalize().startsWith(logoImagesPath)) {
+                Files.deleteIfExists(filePath);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to delete logo: " + logoUrl + " — " + e.getMessage());
         }
     }
 
