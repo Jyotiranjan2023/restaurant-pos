@@ -36,6 +36,17 @@ public class OrderItem {
     @Column(precision = 5, scale = 2)
     private BigDecimal gstPercent = BigDecimal.ZERO;
 
+    // ===== NEW: Variant snapshot =====
+    @Column(name = "variant_id")
+    private Long variantId;   // reference (nullable)
+
+    @Column(name = "variant_name")
+    private String variantName;   // snapshot — "Large"
+
+    // ===== NEW: Addons snapshot (JSON) =====
+    @Column(name = "addons_json", columnDefinition = "TEXT")
+    private String addonsJson;   // e.g., '[{"id":5,"name":"Extra Cheese","price":50.00}]'
+
     @Column(precision = 10, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;   // itemPrice * quantity
 
@@ -51,7 +62,13 @@ public class OrderItem {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Getters & Setters
+    // ===== NEW: Tenant for multi-tenant isolation =====
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
+
+    // ===== Getters & Setters =====
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -87,4 +104,16 @@ public class OrderItem {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Long getVariantId() { return variantId; }
+    public void setVariantId(Long variantId) { this.variantId = variantId; }
+
+    public String getVariantName() { return variantName; }
+    public void setVariantName(String variantName) { this.variantName = variantName; }
+
+    public String getAddonsJson() { return addonsJson; }
+    public void setAddonsJson(String addonsJson) { this.addonsJson = addonsJson; }
+
+    public Tenant getTenant() { return tenant; }
+    public void setTenant(Tenant tenant) { this.tenant = tenant; }
 }

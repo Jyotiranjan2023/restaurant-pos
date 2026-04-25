@@ -1,5 +1,7 @@
 package com.restaurantpos.backend.dto.response;
 
+import java.util.List;
+
 import com.restaurantpos.backend.enums.OrderItemStatus;
 
 import java.math.BigDecimal;
@@ -16,6 +18,8 @@ public class OrderItemResponse {
     private Boolean isCustom;
     private OrderItemStatus status;
     private String notes;
+    private String variantName;
+    private List<AddonSnapshot> addons;
 
     // Getters & Setters
     public Long getId() { return id; }
@@ -47,4 +51,9 @@ public class OrderItemResponse {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public String getVariantName() { return variantName; }
+    public void setVariantName(String variantName) { this.variantName = variantName; }
+
+    public List<AddonSnapshot> getAddons() { return addons; }
+    public void setAddons(List<AddonSnapshot> addons) { this.addons = addons; }
 }

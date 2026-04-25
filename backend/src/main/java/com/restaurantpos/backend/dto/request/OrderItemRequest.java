@@ -1,5 +1,7 @@
 package com.restaurantpos.backend.dto.request;
 
+import java.util.List;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +27,9 @@ public class OrderItemRequest {
     private Boolean isCustom = false;
 
     private String notes;
+    
+    private Long variantId;            // optional
+    private List<Long> addonIds;
 
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
@@ -46,4 +51,9 @@ public class OrderItemRequest {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public Long getVariantId() { return variantId; }
+    public void setVariantId(Long variantId) { this.variantId = variantId; }
+
+    public List<Long> getAddonIds() { return addonIds; }
+    public void setAddonIds(List<Long> addonIds) { this.addonIds = addonIds; }
 }
