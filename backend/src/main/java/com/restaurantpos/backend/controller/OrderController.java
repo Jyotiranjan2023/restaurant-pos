@@ -1,5 +1,9 @@
 package com.restaurantpos.backend.controller;
 
+import org.springframework.data.domain.Page;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.restaurantpos.backend.dto.request.AddItemsRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.restaurantpos.backend.dto.request.CreateOrderRequest;
@@ -34,10 +38,25 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Order fetched", orderService.findById(id)));
     }
-
     @GetMapping
-    public ResponseEntity<ApiResponse<List<OrderResponse>>> findAll() {
-        return ResponseEntity.ok(ApiResponse.success("Orders fetched", orderService.findAll()));
+    public ResponseEntity<ApiResponse<Map<String, Object>>> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+
+        Page<OrderResponse> result = orderService.findAllPaginated(page, size, sortBy, direction);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", result.getContent());
+        response.put("totalElements", result.getTotalElements());
+        response.put("totalPages", result.getTotalPages());
+        response.put("currentPage", result.getNumber());
+        response.put("pageSize", result.getSize());
+        response.put("first", result.isFirst());
+        response.put("last", result.isLast());
+
+        return ResponseEntity.ok(ApiResponse.success("Orders fetched", response));
     }
 
     @GetMapping("/table/{tableId}/running")

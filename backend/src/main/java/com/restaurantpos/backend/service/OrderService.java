@@ -1,5 +1,10 @@
 package com.restaurantpos.backend.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -502,4 +507,22 @@ this.notificationService = notificationService;   // ← NEW
 
         return ir;
     }
+    public Page<OrderResponse> findAllPaginated(int page, int size, String sortBy, String direction) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+
+        // Cap max size to prevent abuse
+        if (size > 100) size = 100;
+        if (size < 1) size = 20;
+        if (page < 0) page = 0;
+
+        Sort sort = direction.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return orderRepo.findByTenantId(tenantId, pageable)
+                .map(this::toResponse);
+    }
+    
 }

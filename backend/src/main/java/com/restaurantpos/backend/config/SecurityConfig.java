@@ -40,6 +40,7 @@ public class SecurityConfig {
                 // ✅ PUBLIC ENDPOINTS
                 .requestMatchers("/api/auth/register-restaurant", "/api/auth/login").permitAll()
                 .requestMatchers("/ws/**").permitAll()
+                
 
                 // ✅ VERY IMPORTANT (FIX YOUR ISSUE)
                 .requestMatchers("/uploads/**").permitAll()

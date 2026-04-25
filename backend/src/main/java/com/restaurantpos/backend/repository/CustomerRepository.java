@@ -1,5 +1,8 @@
 package com.restaurantpos.backend.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.restaurantpos.backend.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +18,9 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Optional<Customer> findByIdAndTenantId(Long id, Long tenantId);
 
     Optional<Customer> findByPhoneAndTenantId(String phone, Long tenantId);
+    
+    Page<Customer> findByTenantIdAndActiveTrue(Long tenantId, Pageable pageable);
+
 
     @Query("SELECT c FROM Customer c " +
            "WHERE c.tenant.id = :tenantId AND c.active = true " +

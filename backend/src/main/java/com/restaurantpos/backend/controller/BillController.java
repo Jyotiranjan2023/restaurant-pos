@@ -1,5 +1,9 @@
 package com.restaurantpos.backend.controller;
 
+import org.springframework.data.domain.Page;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.restaurantpos.backend.dto.request.AddPaymentRequest;
 import com.restaurantpos.backend.dto.request.CancelBillRequest;
 import com.restaurantpos.backend.dto.response.PrintableBillResponse;
@@ -37,13 +41,26 @@ public class BillController {
         return ResponseEntity.ok(ApiResponse.success("Bill fetched",
                 billService.findById(id)));
     }
-
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BillResponse>>> findAll() {
-        return ResponseEntity.ok(ApiResponse.success("Bills fetched",
-                billService.findAll()));
-    }
+    public ResponseEntity<ApiResponse<Map<String, Object>>> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
 
+        Page<BillResponse> result = billService.findAllPaginated(page, size, sortBy, direction);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", result.getContent());
+        response.put("totalElements", result.getTotalElements());
+        response.put("totalPages", result.getTotalPages());
+        response.put("currentPage", result.getNumber());
+        response.put("pageSize", result.getSize());
+        response.put("first", result.isFirst());
+        response.put("last", result.isLast());
+
+        return ResponseEntity.ok(ApiResponse.success("Bills fetched", response));
+    }
     @GetMapping("/order/{orderId}")
     public ResponseEntity<ApiResponse<BillResponse>> findByOrderId(@PathVariable Long orderId) {
         return ResponseEntity.ok(ApiResponse.success("Bill fetched",

@@ -1,5 +1,8 @@
 package com.restaurantpos.backend.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +21,7 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     Optional<Bill> findByIdAndTenantId(Long id, Long tenantId);
 
     Optional<Bill> findByOrderIdAndTenantId(Long orderId, Long tenantId);
+    Page<Bill> findByTenantId(Long tenantId, Pageable pageable);
 
     long countByTenantIdAndBillNumberStartingWith(Long tenantId, String prefix);
     @Query("SELECT b FROM Bill b " +

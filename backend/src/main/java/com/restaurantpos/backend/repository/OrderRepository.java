@@ -1,5 +1,9 @@
 package com.restaurantpos.backend.repository;
 
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +22,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByIdAndTenantId(Long id, Long tenantId);
 
     Optional<Order> findByTableIdAndStatusAndTenantId(Long tableId, OrderStatus status, Long tenantId);
+    Page<Order> findByTenantId(Long tenantId, Pageable pageable);
 
     long countByTenantIdAndOrderNumberStartingWith(Long tenantId, String prefix);
     @Query("SELECT COUNT(o) FROM Order o " +
