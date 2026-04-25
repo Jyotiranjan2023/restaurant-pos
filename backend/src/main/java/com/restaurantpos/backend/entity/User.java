@@ -36,6 +36,9 @@ public class User {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+    
+    @Column(unique = false)
+    private String email;   // optional, can be null
 
     // ===== Getters & Setters =====
     public Long getId() { return id; }
@@ -61,4 +64,6 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }
