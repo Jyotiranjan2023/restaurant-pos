@@ -1,5 +1,8 @@
 package com.restaurantpos.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.restaurantpos.backend.dto.response.NotificationResponse;
 import com.restaurantpos.backend.entity.Notification;
 import com.restaurantpos.backend.entity.Tenant;
@@ -19,6 +22,8 @@ import java.time.LocalDateTime;
 
 @Service
 public class NotificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final NotificationRepository notificationRepo;
     private final TenantRepository tenantRepo;
@@ -54,7 +59,10 @@ public class NotificationService {
                                 NotificationSeverity severity,
                                 String title, String message, String linkUrl) {
         Tenant tenant = tenantRepo.findById(tenantId).orElse(null);
-        if (tenant == null) return;
+        if (tenant == null) {
+            log.warn("Cannot create notification: tenant {} not found", tenantId);
+            return;
+        }
 
         Notification n = new Notification();
         n.setType(type);
@@ -66,15 +74,20 @@ public class NotificationService {
 
         n = notificationRepo.save(n);
 
+        log.debug("Notification created: type={}, severity={}, tenant={}, title='{}'",
+                type, severity, tenantId, title);
+
         // Broadcast via WebSocket to admin's browser
         try {
             messagingTemplate.convertAndSend(
                 "/topic/notifications/" + tenantId,
                 toResponse(n)
             );
+            log.debug("Notification broadcast via WebSocket to tenant {}", tenantId);
         } catch (Exception e) {
             // Don't fail the originating action if WebSocket fails
-            System.err.println("Failed to broadcast notification: " + e.getMessage());
+            log.warn("Failed to broadcast notification via WebSocket for tenant {}: {}",
+                    tenantId, e.getMessage());
         }
     }
 
@@ -111,7 +124,9 @@ public class NotificationService {
     @Transactional
     public int markAllAsRead() {
         Long tenantId = TenantContext.getCurrentTenantId();
-        return notificationRepo.markAllAsRead(tenantId, LocalDateTime.now());
+        int updated = notificationRepo.markAllAsRead(tenantId, LocalDateTime.now());
+        log.info("Marked {} notifications as read for tenant {}", updated, tenantId);
+        return updated;
     }
 
     @Transactional
@@ -125,7 +140,9 @@ public class NotificationService {
     @Transactional
     public int deleteAllRead() {
         Long tenantId = TenantContext.getCurrentTenantId();
-        return notificationRepo.deleteAllRead(tenantId);
+        int deleted = notificationRepo.deleteAllRead(tenantId);
+        log.info("Deleted {} read notifications for tenant {}", deleted, tenantId);
+        return deleted;
     }
 
     /**
@@ -135,7 +152,9 @@ public class NotificationService {
     @Transactional
     public int cleanupOldNotifications() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
-        return notificationRepo.deleteOldRead(cutoff);
+        int deleted = notificationRepo.deleteOldRead(cutoff);
+        log.info("Auto-cleanup: deleted {} old read notifications (older than 30 days)", deleted);
+        return deleted;
     }
 
     // ========== Helpers ==========
