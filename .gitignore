@@ -1,0 +1,82 @@
+# ============================================
+# Backend (Java / Spring Boot / Maven)
+# ============================================
+backend/target/
+backend/.mvn/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/.factorypath
+backend/.apt_generated/
+backend/.apt_generated_test/
+backend/HELP.md
+backend/mvnw
+backend/mvnw.cmd
+backend/*.iml
+backend/.idea/
+backend/bin/
+backend/uploads/
+backend/*.launch
+
+# ============================================
+# Frontend (React / Node)
+# ============================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/.vite/
+frontend/coverage/
+
+# ============================================
+# Eclipse IDE
+# ============================================
+.metadata/
+.recommenders/
+.settings/
+.classpath
+.project
+*.launch
+bin/
+
+# ============================================
+# IntelliJ IDEA
+# ============================================
+.idea/
+*.iml
+
+# ============================================
+# VS Code
+# ============================================
+.vscode/
+
+# ============================================
+# OS Files
+# ============================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+spring.log
+
+# ============================================
+# Environment Variables & Secrets
+# ============================================
+.env
+*.env
+!.env.example
+*.pem
+*.key
+
+# ============================================
+# Database dumps
+# ============================================
+*.sql.bak
+*.dump
