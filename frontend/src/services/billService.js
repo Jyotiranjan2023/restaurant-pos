@@ -1,0 +1,32 @@
+import api from './api'
+
+export const generateBill = async (orderId) => {
+  const response = await api.post(`/api/bills/generate/${orderId}`)
+  return response.data
+}
+
+export const fetchBillById = async (billId) => {
+  const response = await api.get(`/api/bills/${billId}`)
+  return response.data
+}
+
+export const fetchBillByOrderId = async (orderId) => {
+  const response = await api.get(`/api/bills/order/${orderId}`)
+  return response.data
+}
+
+export const addPayment = async (billId, payment) => {
+  const response = await api.post(`/api/bills/${billId}/payments`, payment)
+  return response.data
+}
+
+export const settleBill = async (billId) => {
+  const response = await api.post(`/api/bills/${billId}/settle`)
+  return response.data
+}
+export const fetchBillPrintHtml = async (billId) => {
+  const response = await api.get(`/api/bills/${billId}/print-html`, {
+    responseType: 'text',  // backend returns HTML, not JSON
+  })
+  return response.data
+}

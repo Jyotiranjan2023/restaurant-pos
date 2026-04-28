@@ -20,6 +20,7 @@ import Profile from './pages/Profile'
 import Unauthorized from './pages/Unauthorized'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import BillDetail from './pages/BillDetail'
 
 export default function App() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
 <Route path="/tables" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><Tables /></ProtectedRoute>} />
 <Route path="/orders" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><RunningOrders /></ProtectedRoute>} />
 <Route path="/orders/:id" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><OrderDetail /></ProtectedRoute>} />
+<Route path="/bills/:id" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><BillDetail /></ProtectedRoute>} />
         {/* Chef + Admin */}
         <Route path="/kitchen" element={<ProtectedRoute allowedRoles={['CHEF', 'ADMIN']}><Kitchen /></ProtectedRoute>} />
         <Route path="/menu-availability" element={<ProtectedRoute allowedRoles={['CHEF', 'ADMIN']}><MenuAvailability /></ProtectedRoute>} />

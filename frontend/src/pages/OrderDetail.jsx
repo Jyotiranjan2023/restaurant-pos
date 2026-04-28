@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { generateBill, fetchBillByOrderId } from '../services/billService'
 import useOrder from '../hooks/useOrder'
 import OrderItemRow from '../components/orders/OrderItemRow'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -28,10 +29,11 @@ export default function OrderDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { order, loading, error, refetch } = useOrder(id)
-
+   
   const [itemToCancel, setItemToCancel] = useState(null)
   const [showCancelOrderDialog, setShowCancelOrderDialog] = useState(false)
   const [actionInProgress, setActionInProgress] = useState(false)
+  const [generatingBill, setGeneratingBill] = useState(false)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
 
   const showFeedback = (type, message) => {
@@ -104,6 +106,33 @@ export default function OrderDetail() {
     }
     setItemToCancel(item)
   }
+
+  const handleGenerateBill = async () => {
+  setGeneratingBill(true)
+  try {
+    // Try to fetch existing bill first (one-bill-per-order design)
+    const existingRes = await fetchBillByOrderId(order.id).catch(() => null)
+    
+    if (existingRes?.success && existingRes.data) {
+      // Bill already exists — go straight to it
+      navigate(`/bills/${existingRes.data.id}`)
+      return
+    }
+    
+    // No existing bill — generate new one
+    const res = await generateBill(order.id)
+    if (res.success) {
+      showFeedback('success', `Bill ${res.data.billNumber} generated`)
+      navigate(`/bills/${res.data.id}`)
+    } else {
+      showFeedback('error', res.message || 'Failed to generate bill')
+    }
+  } catch (err) {
+    showFeedback('error', err.response?.data?.message || 'Server error')
+  } finally {
+    setGeneratingBill(false)
+  }
+}
 
   // Confirm cancel single item
   const confirmCancelItem = async () => {
@@ -337,16 +366,17 @@ export default function OrderDetail() {
         </div>
 
         {canModify && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => alert('Generate Bill — coming in Phase 11')}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-lg text-sm"
-            >
-              Generate Bill
-            </button>
-          </div>
-        )}
+  <div className="mt-4 pt-4 border-t border-gray-200">
+    <button
+      type="button"
+      onClick={handleGenerateBill}
+      disabled={generatingBill}
+      className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {generatingBill ? 'Generating...' : 'Generate Bill'}
+    </button>
+  </div>
+)}
       </div>
 
       {/* Cancel single item dialog */}
