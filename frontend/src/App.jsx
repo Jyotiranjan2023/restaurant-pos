@@ -1,4 +1,7 @@
+
+import OrderDetail from './pages/OrderDetail'
 import { Routes, Route, Navigate } from 'react-router-dom'
+
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import POS from './pages/POS'
@@ -43,9 +46,9 @@ export default function App() {
 
         {/* Admin + Waiter */}
         <Route path="/pos" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><POS /></ProtectedRoute>} />
-        <Route path="/tables" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><Tables /></ProtectedRoute>} />
-        <Route path="/orders" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><RunningOrders /></ProtectedRoute>} />
-
+<Route path="/tables" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><Tables /></ProtectedRoute>} />
+<Route path="/orders" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><RunningOrders /></ProtectedRoute>} />
+<Route path="/orders/:id" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><OrderDetail /></ProtectedRoute>} />
         {/* Chef + Admin */}
         <Route path="/kitchen" element={<ProtectedRoute allowedRoles={['CHEF', 'ADMIN']}><Kitchen /></ProtectedRoute>} />
         <Route path="/menu-availability" element={<ProtectedRoute allowedRoles={['CHEF', 'ADMIN']}><MenuAvailability /></ProtectedRoute>} />

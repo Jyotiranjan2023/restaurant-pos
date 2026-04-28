@@ -1,6 +1,5 @@
 import CartItem from './CartItem'
 import { calculateCartTotals } from '../../utils/cartCalculations'
-
 export default function CartPanel({
   items,
   orderType,
@@ -11,26 +10,32 @@ export default function CartPanel({
   onClear,
   onSaveOrder,
   saving,
+  isAddMode,
 }) {
   const totals = calculateCartTotals(items)
   const isEmpty = items.length === 0
 
   // Validation: can we save the order?
-  const canSave =
-    !isEmpty &&
-    (orderType !== 'DINE_IN' || tableId !== null)
+  const canSave = !isEmpty && (
+  isAddMode ||
+  orderType !== 'DINE_IN' ||
+  tableId !== null
+)
 
-  // Show why save is disabled (helpful for staff)
-  let blockerMessage = ''
-  if (isEmpty) blockerMessage = 'Add items to cart'
-  else if (orderType === 'DINE_IN' && !tableId) blockerMessage = 'Select a table first'
+let blockerMessage = ''
+if (isEmpty) blockerMessage = 'Add items to cart'
+else if (!isAddMode && orderType === 'DINE_IN' && !tableId) {
+  blockerMessage = 'Select a table first'
+}
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <div>
-          <p className="font-semibold text-gray-800">Current Order</p>
+          <p className="font-semibold text-gray-800">
+  {isAddMode ? 'Items to Add' : 'Current Order'}
+</p>
           <p className="text-xs text-gray-500">
             {totals.itemCount} {totals.itemCount === 1 ? 'item' : 'items'}
           </p>
@@ -92,13 +97,15 @@ export default function CartPanel({
             </p>
           )}
 
-         <button
+       <button
   type="button"
   onClick={onSaveOrder}
   disabled={!canSave || saving}
   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg text-sm mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
 >
-  {saving ? 'Saving...' : 'Save Order'}
+  {saving
+    ? (isAddMode ? 'Adding...' : 'Saving...')
+    : (isAddMode ? 'Add to Order' : 'Save Order')}
 </button>
         </div>
       )}

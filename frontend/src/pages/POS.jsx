@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import OrderTypeSelector from '../components/pos/OrderTypeSelector'
 import TablePicker from '../components/pos/TablePicker'
 import CategorySidebar from '../components/pos/CategorySidebar'
@@ -9,27 +10,65 @@ import useCategories from '../hooks/useCategories'
 import useProducts from '../hooks/useProducts'
 import useTables from '../hooks/useTables'
 import useCart from '../hooks/useCart'
-import { createOrder } from '../services/orderService'
+import { createOrder, addItemsToOrder, fetchOrderById } from '../services/orderService'
 import { validateOrder } from '../utils/orderValidation'
 
 const EMPTY_CUSTOMER = { name: '', phone: '', address: '' }
 
 export default function POS() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+
+  // Add mode detection
+  const addToOrderId = searchParams.get('addToOrder')
+  const isAddMode = !!addToOrderId
+
+  // Existing order data (only loaded in add mode)
+  const [existingOrder, setExistingOrder] = useState(null)
+  const [loadingExisting, setLoadingExisting] = useState(false)
+  const [existingOrderError, setExistingOrderError] = useState('')
+
+  // Form state (used only in new-order mode)
   const [orderType, setOrderType] = useState('DINE_IN')
   const [tableId, setTableId] = useState(null)
   const [customer, setCustomer] = useState(EMPTY_CUSTOMER)
+  const [showCustomerFormForDineIn, setShowCustomerFormForDineIn] = useState(false)
+  const [customerErrors, setCustomerErrors] = useState({})
+
+  // Common state
   const [selectedCategoryId, setSelectedCategoryId] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [showCustomerFormForDineIn, setShowCustomerFormForDineIn] = useState(false)
-
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
-  const [customerErrors, setCustomerErrors] = useState({})
 
   const { categories, loading: catLoading } = useCategories()
   const { products, loading: prodLoading } = useProducts()
   const { refetch: refetchTables } = useTables()
   const cart = useCart()
+
+  // Load existing order when in add mode
+  useEffect(() => {
+    if (!isAddMode) return
+
+    const loadOrder = async () => {
+      setLoadingExisting(true)
+      setExistingOrderError('')
+      try {
+        const res = await fetchOrderById(addToOrderId)
+        if (res.success) {
+          setExistingOrder(res.data)
+        } else {
+          setExistingOrderError(res.message || 'Failed to load order')
+        }
+      } catch (err) {
+        setExistingOrderError(err.response?.data?.message || 'Server error')
+      } finally {
+        setLoadingExisting(false)
+      }
+    }
+
+    loadOrder()
+  }, [isAddMode, addToOrderId])
 
   const showFeedback = (type, message) => {
     setFeedback({ type, message })
@@ -63,7 +102,6 @@ export default function POS() {
     })
   }, [products, selectedCategoryId, searchTerm])
 
-  // Reset everything except orderType (keeps user's last choice)
   const resetForNextOrder = () => {
     cart.clearCart()
     setTableId(null)
@@ -74,7 +112,51 @@ export default function POS() {
     setShowCustomerFormForDineIn(false)
   }
 
+  // Two save paths — branch based on mode
   const handleSaveOrder = async () => {
+    if (cart.items.length === 0) {
+      showFeedback('error', 'Cart is empty. Add items first.')
+      return
+    }
+
+    if (isAddMode) {
+      await handleAddToExistingOrder()
+    } else {
+      await handleCreateNewOrder()
+    }
+  }
+
+  const handleAddToExistingOrder = async () => {
+    const items = cart.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      variantId: null,
+      addonIds: [],
+      notes: null,
+      isCustom: false,
+    }))
+
+    setSaving(true)
+    try {
+      const res = await addItemsToOrder(addToOrderId, items)
+      if (res.success) {
+        showFeedback('success', `Items added to ${existingOrder.orderNumber}`)
+        cart.clearCart()
+        // Redirect back to detail page after short delay so user sees toast
+        setTimeout(() => {
+          navigate(`/orders/${addToOrderId}`)
+        }, 1000)
+      } else {
+        showFeedback('error', res.message || 'Failed to add items')
+      }
+    } catch (err) {
+      showFeedback('error', err.response?.data?.message || 'Server error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCreateNewOrder = async () => {
     const validation = validateOrder({
       orderType,
       tableId,
@@ -123,6 +205,36 @@ export default function POS() {
     }
   }
 
+  // Loading existing order in add mode
+  if (isAddMode && loadingExisting) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <p className="text-gray-500">Loading order...</p>
+      </div>
+    )
+  }
+
+  // Error loading existing order in add mode
+  if (isAddMode && existingOrderError) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => navigate('/orders')}
+          className="text-sm text-orange-600 hover:text-orange-700 font-medium mb-3"
+        >
+          ← Back to Running Orders
+        </button>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <p className="text-red-700 font-medium">
+            Failed to load order: {existingOrderError}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Loading menu data
   if (catLoading || prodLoading) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
@@ -137,19 +249,60 @@ export default function POS() {
   }
 
   const showCustomerForm =
-    orderType === 'TAKEAWAY' ||
-    orderType === 'DELIVERY' ||
-    (orderType === 'DINE_IN' && showCustomerFormForDineIn)
+    !isAddMode && (
+      orderType === 'TAKEAWAY' ||
+      orderType === 'DELIVERY' ||
+      (orderType === 'DINE_IN' && showCustomerFormForDineIn)
+    )
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Take Order</h1>
-        <p className="text-gray-500 text-sm">
-          Create a new order for dine-in, takeaway, or delivery.
-        </p>
-      </div>
+      {/* Header — different for new vs add mode */}
+      {isAddMode ? (
+        <div>
+          <button
+            type="button"
+            onClick={() => navigate(`/orders/${addToOrderId}`)}
+            className="text-sm text-orange-600 hover:text-orange-700 font-medium mb-2"
+          >
+            ← Cancel and back to order
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800">Add Items to Order</h1>
+          <p className="text-gray-500 text-sm">
+            Items selected here will be added to existing order.
+          </p>
+        </div>
+      ) : (
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Take Order</h1>
+          <p className="text-gray-500 text-sm">
+            Create a new order for dine-in, takeaway, or delivery.
+          </p>
+        </div>
+      )}
+
+      {/* Add mode banner showing existing order info */}
+      {isAddMode && existingOrder && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="text-sm font-bold text-blue-900">
+                {existingOrder.orderNumber}
+              </p>
+              <p className="text-xs text-blue-700 mt-0.5">
+                {existingOrder.orderType === 'DINE_IN'
+                  ? `Table ${existingOrder.tableNumber || '#' + existingOrder.tableId}`
+                  : existingOrder.customerName || 'Walk-in'}
+                {' · '}
+                {existingOrder.items.length} existing items
+              </p>
+            </div>
+            <span className="text-xs text-blue-700 font-medium">
+              Current Total: ₹{Number(existingOrder.totalAmount).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Feedback toast */}
       {feedback.message && (
@@ -160,28 +313,27 @@ export default function POS() {
         </div>
       )}
 
-      {/* Order Type */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <label className="block text-sm font-semibold text-gray-800 mb-3">
-          Order Type
-        </label>
-        <OrderTypeSelector value={orderType} onChange={handleOrderTypeChange} />
-      </div>
+      {/* Order Type — hidden in add mode */}
+      {!isAddMode && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            Order Type
+          </label>
+          <OrderTypeSelector value={orderType} onChange={handleOrderTypeChange} />
+        </div>
+      )}
 
-      {/* Table Picker */}
-      {orderType === 'DINE_IN' && (
+      {/* Table Picker — hidden in add mode */}
+      {!isAddMode && orderType === 'DINE_IN' && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <label className="block text-sm font-semibold text-gray-800 mb-3">
             Select Table
           </label>
-          <TablePicker
-            selectedTableId={tableId}
-            onSelect={setTableId}
-          />
+          <TablePicker selectedTableId={tableId} onSelect={setTableId} />
         </div>
       )}
 
-      {/* Customer Form */}
+      {/* Customer Form — hidden in add mode */}
       {showCustomerForm && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <label className="block text-sm font-semibold text-gray-800 mb-3">
@@ -196,8 +348,8 @@ export default function POS() {
         </div>
       )}
 
-      {/* Optional: show "Add Customer" button for DINE_IN */}
-      {orderType === 'DINE_IN' && !showCustomerFormForDineIn && (
+      {/* Add Customer Details optional link — hidden in add mode */}
+      {!isAddMode && orderType === 'DINE_IN' && !showCustomerFormForDineIn && (
         <button
           type="button"
           onClick={() => setShowCustomerFormForDineIn(true)}
@@ -207,7 +359,7 @@ export default function POS() {
         </button>
       )}
 
-      {/* MENU + CART — 3-column layout */}
+      {/* MENU + CART */}
       <div className="grid grid-cols-12 gap-3" style={{ minHeight: '500px' }}>
         <div className="col-span-2">
           <CategorySidebar
@@ -242,6 +394,7 @@ export default function POS() {
             onClear={cart.clearCart}
             onSaveOrder={handleSaveOrder}
             saving={saving}
+            isAddMode={isAddMode}
           />
         </div>
       </div>
