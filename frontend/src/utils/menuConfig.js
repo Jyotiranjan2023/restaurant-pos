@@ -11,6 +11,7 @@ export const menuConfig = [
   { path: '/inventory',      label: 'Inventory',         icon: '📦', roles: ['ADMIN'] },
   { path: '/customers',      label: 'Customers',         icon: '👥', roles: ['ADMIN'] },
   { path: '/coupons',        label: 'Coupons',           icon: '🎟️', roles: ['ADMIN'] },
+  { path: '/bills',          label: 'Bills',             icon: '🧾', roles: ['ADMIN'] },
   { path: '/reports',        label: 'Reports',           icon: '📈', roles: ['ADMIN'] },
   { path: '/staff',          label: 'Staff',             icon: '👤', roles: ['ADMIN'] },
 

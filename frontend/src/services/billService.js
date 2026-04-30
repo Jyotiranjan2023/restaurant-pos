@@ -49,3 +49,8 @@ export const cancelBill = async (billId, reason) => {
   const response = await api.patch(`/api/bills/${billId}/cancel`, { reason })
   return response.data
 }
+
+export const fetchAllBills = async (page = 0, size = 20) => {
+  const response = await api.get(`/api/bills?page=${page}&size=${size}`)
+  return response.data
+}
