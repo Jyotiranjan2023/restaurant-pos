@@ -24,9 +24,28 @@ export const settleBill = async (billId) => {
   const response = await api.post(`/api/bills/${billId}/settle`)
   return response.data
 }
+
 export const fetchBillPrintHtml = async (billId) => {
   const response = await api.get(`/api/bills/${billId}/print-html`, {
-    responseType: 'text',  // backend returns HTML, not JSON
+    responseType: 'text',
   })
+  return response.data
+}
+
+export const applyCoupon = async (billId, couponCode) => {
+  const response = await api.post(`/api/bills/${billId}/apply-coupon`, { code: couponCode })
+  return response.data
+}
+
+export const applyDiscount = async (billId, discountType, discountValue) => {
+  const response = await api.patch(`/api/bills/${billId}/discount`, {
+    discountType,
+    discountValue: Number(discountValue),
+  })
+  return response.data
+}
+
+export const cancelBill = async (billId, reason) => {
+  const response = await api.patch(`/api/bills/${billId}/cancel`, { reason })
   return response.data
 }
