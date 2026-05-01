@@ -128,9 +128,7 @@ public class StaffService {
         if (target.getRole() == Role.ADMIN)
             throw new BadRequestException("Cannot delete an ADMIN user");
 
-        // Soft delete
-        target.setActive(false);
-        userRepo.save(target);
+        userRepo.delete(target);
     }
 
     // ========== Helpers ==========
