@@ -21,16 +21,14 @@ export default function Customers() {
   } = useCustomers();
 
   const [searchInput, setSearchInput] = useState('');
-  const [tab, setTab] = useState('all'); // 'all' | 'top'
+  const [tab, setTab] = useState('all');
   const [topSpenders, setTopSpenders] = useState(null);
   const [topLoading, setTopLoading] = useState(false);
 
-  // Detail drawer
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // Add/Edit modal
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -38,10 +36,15 @@ export default function Customers() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleSearch = (e) => {
-  const val = e.target.value;
-  setSearchInput(val);
-  search(val);
-};
+    const val = e.target.value;
+    setSearchInput(val);
+    search(val);
+  };
+
+  const clearSearch = () => {
+    setSearchInput('');
+    search('');
+  };
 
   const loadTopSpenders = async () => {
     if (topSpenders) return;
@@ -68,8 +71,11 @@ export default function Customers() {
     try {
       const data = await fetchCustomerOrders(customer.id);
       setOrders(data);
-    } catch { setOrders([]); }
-    finally { setOrdersLoading(false); }
+    } catch {
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
   };
 
   const openAdd = () => {
@@ -82,9 +88,12 @@ export default function Customers() {
   const openEdit = (c) => {
     setEditingId(c.id);
     setForm({
-      name: c.name, phone: c.phone,
-      email: c.email || '', address: c.address || '',
-      notes: c.notes || '', vip: c.vip || false,
+      name: c.name,
+      phone: c.phone,
+      email: c.email || '',
+      address: c.address || '',
+      notes: c.notes || '',
+      vip: c.vip || false,
     });
     setFormError('');
     setShowForm(true);
@@ -107,36 +116,41 @@ export default function Customers() {
       if (editingId) await updateCustomer(editingId, payload);
       else await createCustomer(payload);
       setShowForm(false);
-      refresh();
-      setTopSpenders(null); // reset top spenders cache
+      setTopSpenders(null);
+      clearSearch();
     } catch (err) {
       setFormError(err?.response?.data?.message || 'Failed to save');
     } finally {
       setSubmitting(false);
     }
   };
-const handleDelete = async (id) => {
-  if (!window.confirm('Delete this customer?')) return;
-  try {
-    await deleteCustomer(id);
-    setSearchInput('');
-    setTopSpenders(null);
-    if (selectedCustomer?.id === id) setSelectedCustomer(null);
-    refresh(); // now always loadPage(0)
-  } catch (err) {
-    alert(err?.response?.data?.message || 'Delete failed');
-  }
-};
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this customer?')) return;
+    try {
+      await deleteCustomer(id);
+      // close drawer if deleted customer was open
+      if (selectedCustomer?.id === id) setSelectedCustomer(null);
+      // reset top spenders cache
+      setTopSpenders(null);
+      // clear search and reload page 0 — pass 0 directly, no hook state involved
+      setSearchInput('');
+      refresh(0);
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Delete failed');
+    }
+  };
 
   const displayList = tab === 'top' ? (topSpenders || []) : customers;
 
-  if (loading && tab === 'all') return (
+  if (loading && customers.length === 0) return (
     <div className="flex items-center justify-center h-64 text-gray-400">Loading customers...</div>
   );
+
   if (error) return (
     <div className="flex flex-col items-center justify-center h-64 gap-3 text-red-500">
       <p>{error}</p>
-      <button onClick={refresh} className="px-4 py-2 bg-red-100 rounded-lg text-sm">Retry</button>
+      <button onClick={() => refresh(0)} className="px-4 py-2 bg-red-100 rounded-lg text-sm">Retry</button>
     </div>
   );
 
@@ -150,10 +164,16 @@ const handleDelete = async (id) => {
           <p className="text-xs md:text-sm text-gray-500 mt-0.5">{totalElements} total</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={refresh} className="px-3 py-2 text-xs md:text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
+          <button
+            onClick={() => { clearSearch(); }}
+            className="px-3 py-2 text-xs md:text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+          >
             ↻
           </button>
-          <button onClick={openAdd} className="px-3 py-2 text-xs md:text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium">
+          <button
+            onClick={openAdd}
+            className="px-3 py-2 text-xs md:text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+          >
             + Add
           </button>
         </div>
@@ -182,12 +202,12 @@ const handleDelete = async (id) => {
         ))}
       </div>
 
-      {/* Customer List */}
+      {/* List */}
       <div className="space-y-2">
         {tab === 'top' && topLoading && (
           <div className="text-center text-gray-400 py-8">Loading...</div>
         )}
-        {displayList.length === 0 && !topLoading && (
+        {!loading && !topLoading && displayList.length === 0 && (
           <div className="text-center text-gray-400 py-12">No customers found</div>
         )}
         {displayList.map((c, idx) => (
@@ -198,7 +218,6 @@ const handleDelete = async (id) => {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                {/* Rank badge for top spenders */}
                 {tab === 'top' && (
                   <span className="w-7 h-7 rounded-full bg-orange-100 text-orange-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
                     {idx + 1}
@@ -242,7 +261,7 @@ const handleDelete = async (id) => {
         ))}
       </div>
 
-      {/* Pagination — only on All tab */}
+      {/* Pagination */}
       {tab === 'all' && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <button
@@ -272,7 +291,6 @@ const handleDelete = async (id) => {
             className="bg-white w-full max-w-md h-full overflow-y-auto p-6 space-y-5"
             onClick={e => e.stopPropagation()}
           >
-            {/* Drawer Header */}
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -286,7 +304,6 @@ const handleDelete = async (id) => {
               <button onClick={() => setSelectedCustomer(null)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-orange-50 rounded-xl p-3 text-center">
                 <p className="text-xs text-orange-600 font-medium">Total Spent</p>
@@ -298,7 +315,6 @@ const handleDelete = async (id) => {
               </div>
             </div>
 
-            {/* Info */}
             <div className="space-y-2 text-sm">
               {selectedCustomer.email && (
                 <div className="flex gap-2"><span className="text-gray-400 w-16">Email</span><span className="text-gray-700">{selectedCustomer.email}</span></div>
@@ -314,7 +330,6 @@ const handleDelete = async (id) => {
               )}
             </div>
 
-            {/* Order History */}
             <div>
               <h3 className="font-semibold text-gray-700 mb-3">Order History</h3>
               {ordersLoading && <p className="text-sm text-gray-400">Loading...</p>}
@@ -358,11 +373,11 @@ const handleDelete = async (id) => {
 
             <div className="space-y-3">
               {[
-                { key: 'name',    label: 'Name *',    placeholder: 'Full name' },
-                { key: 'phone',   label: 'Phone *',   placeholder: '9876543210' },
-                { key: 'email',   label: 'Email',     placeholder: 'optional' },
-                { key: 'address', label: 'Address',   placeholder: 'optional' },
-                { key: 'notes',   label: 'Notes',     placeholder: 'optional' },
+                { key: 'name',    label: 'Name *',  placeholder: 'Full name' },
+                { key: 'phone',   label: 'Phone *', placeholder: '9876543210' },
+                { key: 'email',   label: 'Email',   placeholder: 'optional' },
+                { key: 'address', label: 'Address', placeholder: 'optional' },
+                { key: 'notes',   label: 'Notes',   placeholder: 'optional' },
               ].map(({ key, label, placeholder }) => (
                 <div key={key}>
                   <label className="text-xs font-medium text-gray-600">{label}</label>

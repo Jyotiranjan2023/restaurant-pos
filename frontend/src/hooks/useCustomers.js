@@ -31,13 +31,11 @@ export const useCustomers = () => {
   const search = useCallback((query) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
-    // Empty query — load immediately, no debounce
     if (!query || query.trim().length === 0) {
       loadPage(0);
       return;
     }
 
-    // Has query — debounce
     if (query.trim().length >= 2) {
       debounceTimer.current = setTimeout(async () => {
         try {
@@ -62,6 +60,6 @@ export const useCustomers = () => {
     loading, error,
     search,
     goToPage: loadPage,
-    refresh: () => loadPage(0),
+    refresh: loadPage,
   };
 };
