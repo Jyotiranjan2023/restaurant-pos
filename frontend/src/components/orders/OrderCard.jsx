@@ -16,9 +16,12 @@ export default function OrderCard({ order, onClick }) {
   const typeStyle = orderTypeStyles[order.orderType] || 'bg-gray-100 text-gray-700'
   const typeLabel = orderTypeLabels[order.orderType] || order.orderType
 
-  // Show first 3 items in preview, then "+N more"
   const previewItems = order.items.slice(0, 3)
   const remainingCount = order.items.length - previewItems.length
+
+  // Count ready items
+  const readyCount = order.items.filter(i => i.status === 'READY').length
+  const preparingCount = order.items.filter(i => i.status === 'PREPARING').length
 
   return (
     <button
@@ -39,11 +42,23 @@ export default function OrderCard({ order, onClick }) {
             {timeAgo(order.createdAt)}
           </p>
         </div>
-        <span
-          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ml-2 whitespace-nowrap ${typeStyle}`}
-        >
-          {typeLabel}
-        </span>
+        <div className="flex items-center gap-1.5 ml-2 flex-wrap justify-end">
+          {/* Ready badge */}
+          {readyCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-green-100 text-green-700 border border-green-300 animate-pulse">
+              ✅ {readyCount} Ready
+            </span>
+          )}
+          {/* Preparing badge */}
+          {preparingCount > 0 && readyCount === 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-blue-50 text-blue-600 border border-blue-200">
+              👨‍🍳 {preparingCount} Preparing
+            </span>
+          )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${typeStyle}`}>
+            {typeLabel}
+          </span>
+        </div>
       </div>
 
       {/* Customer / Table row */}
@@ -62,8 +77,7 @@ export default function OrderCard({ order, onClick }) {
               {order.customerName || 'Walk-in'}
               {order.customerPhone && (
                 <span className="text-gray-500 font-normal">
-                  {' · '}
-                  {order.customerPhone}
+                  {' · '}{order.customerPhone}
                 </span>
               )}
             </span>
@@ -81,6 +95,16 @@ export default function OrderCard({ order, onClick }) {
             <span className="text-gray-700 truncate flex-1">
               {item.quantity}× {item.itemName}
             </span>
+            {item.status === 'READY' && (
+              <span className="text-green-600 text-[10px] font-bold ml-1">
+                ✅ READY
+              </span>
+            )}
+            {item.status === 'PREPARING' && (
+              <span className="text-blue-500 text-[10px] font-medium ml-1">
+                👨‍🍳 PREPARING
+              </span>
+            )}
             {item.status === 'CANCELLED' && (
               <span className="text-red-500 text-[10px] font-medium ml-1">
                 CANCELLED
