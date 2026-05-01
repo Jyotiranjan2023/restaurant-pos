@@ -121,16 +121,18 @@ public class CouponService {
 
         return toResponse(couponRepo.save(c));
     }
-
     @Transactional
     public void delete(Long id) {
         Long tenantId = TenantContext.getCurrentTenantId();
         Coupon c = couponRepo.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coupon not found"));
-        c.setActive(false);
-        couponRepo.save(c);
+        
+        // Delete usage records first to avoid foreign key constraint
+        usageRepo.deleteByCouponId(c.getId());
+        
+        // Now delete the coupon
+        couponRepo.delete(c);
     }
-
     @Transactional
     public CouponResponse updateStatus(Long id, Boolean active) {
         Long tenantId = TenantContext.getCurrentTenantId();
@@ -245,7 +247,7 @@ public class CouponService {
     public Coupon findCouponEntityByCode(String code, Long tenantId) {
         return couponRepo.findByCodeAndTenantId(code.toUpperCase().trim(), tenantId)
                 .orElse(null);
-    }
+    } 
 
     // ========== Helpers ==========
 
