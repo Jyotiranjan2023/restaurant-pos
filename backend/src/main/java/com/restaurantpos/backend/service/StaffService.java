@@ -60,11 +60,9 @@ public class StaffService {
 
         return toResponse(userRepo.save(staff));
     }
-
     public List<StaffResponse> findAllStaff() {
         Long tenantId = TenantContext.getCurrentTenantId();
         return userRepo.findByTenantIdOrderByCreatedAtDesc(tenantId).stream()
-                .filter(u -> Boolean.TRUE.equals(u.getActive()))   // ← add this line
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
