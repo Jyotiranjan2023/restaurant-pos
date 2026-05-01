@@ -366,6 +366,7 @@ export default function Coupons() {
       setDeleteTarget(null)
       setCoupons(prev => prev.filter(c => c.id !== targetId))
       showFeedback('success', `Coupon "${targetCode}" deleted`)
+      await loadCoupons()
       // NO loadCoupons() here — backend bug, deleted coupon returns in GET
     } else {
       showFeedback('error', res.message || 'Delete failed')
