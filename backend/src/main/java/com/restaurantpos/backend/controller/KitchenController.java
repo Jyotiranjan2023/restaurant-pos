@@ -21,6 +21,7 @@ public class KitchenController {
     }
 
     @GetMapping("/items")
+    
     public ResponseEntity<ApiResponse<List<KitchenItemResponse>>> getKitchenItems() {
         return ResponseEntity.ok(ApiResponse.success("Kitchen items fetched",
                 kitchenService.getKitchenItems()));

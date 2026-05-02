@@ -102,8 +102,7 @@ public class TableService {
         if (table.getStatus() == com.restaurantpos.backend.enums.TableStatus.RUNNING)
             throw new BadRequestException("Cannot delete table with a running order");
 
-        table.setActive(false);
-        tableRepo.save(table);
+        tableRepo.delete(table);
     }
 
     private TableResponse toResponse(RestaurantTable t) {
