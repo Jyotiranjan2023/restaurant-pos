@@ -1,5 +1,6 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
+import { fillDateGaps } from '../utils/dateRange'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -103,12 +104,27 @@ export default function Dashboard() {
       </button>
     </div>
   );
+// Fill in any missing days with ₹0 entries
+const today = new Date()
+const sevenDaysAgo = new Date()
+sevenDaysAgo.setDate(today.getDate() - 6)
 
-  const revenueChart = (data.last7DaysRevenue || []).map(d => ({
-    date: d.date.slice(5),
-    revenue: d.revenue,
-    orders: d.orderCount,
-  }));
+const filledRevenue = fillDateGaps(
+  data.last7DaysRevenue || [],
+  sevenDaysAgo,
+  today,
+  'date',
+  { revenue: 0, orderCount: 0 }
+)
+// Tiny visible bar for empty days — calculate based on max revenue
+const maxRevenue = Math.max(...filledRevenue.map(d => d.revenue), 0)
+const emptyDayValue = maxRevenue > 0 ? maxRevenue * 0.008 : 1  // ~0.8% of max, very small
+const revenueChart = filledRevenue.map(d => ({
+  date: d.date.slice(5),
+  revenue: d.revenue,
+  orders: d.orderCount,
+  isEmpty: d._isEmpty || d.revenue === 0,
+}))
 
   const orderTypeChart = Object.entries(data.revenueByOrderType || {}).map(([name, value]) => ({
     name, value,
@@ -154,8 +170,20 @@ export default function Dashboard() {
           <BarChart data={revenueChart} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} width={40} />
-            <Tooltip formatter={(val, name) => name === 'revenue' ? formatCurrency(val) : val} />
-            <Bar dataKey="revenue" fill="#f97316" radius={[4, 4, 0, 0]} name="revenue" />
+       <Tooltip
+  formatter={(val, name, props) => {
+    if (name === 'revenue') return formatCurrency(props.payload.revenue)
+    return val
+  }}
+/>
+            <Bar dataKey="revenue" radius={[4, 4, 0, 0]} name="revenue" minPointSize={4}>
+  {revenueChart.map((entry, i) => (
+    <Cell
+      key={i}
+      fill={entry.isEmpty ? '#e5e7eb' : '#f97316'}
+    />
+  ))}
+</Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
