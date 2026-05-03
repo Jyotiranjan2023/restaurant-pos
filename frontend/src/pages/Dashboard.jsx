@@ -7,6 +7,62 @@ import {
 import { useDashboard } from '../hooks/useDashboard';
 
 const COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444'];
+const RevenueBreakdownCard = ({ title, chartData, formatCurrency }) => {
+  const total = chartData.reduce((sum, item) => sum + item.value, 0);
+
+  // Empty state — no data
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+        <h2 className="text-sm md:text-base font-semibold text-gray-700 mb-3">{title}</h2>
+        <div className="flex items-center justify-center h-[200px] text-gray-400 text-sm italic">
+          No data yet
+        </div>
+      </div>
+    );
+  }
+
+  // Single category — pie would look like a circle, show as stat card instead
+  if (chartData.length === 1) {
+    const only = chartData[0];
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+        <h2 className="text-sm md:text-base font-semibold text-gray-700 mb-3">{title}</h2>
+        <div className="flex flex-col items-center justify-center h-[200px] gap-2">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: COLORS[0] }}
+          />
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{only.name}</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-800">
+            {formatCurrency(only.value)}
+          </p>
+          <p className="text-xs text-gray-400 italic">
+            100% of revenue from this category
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Multiple categories — show pie chart (unchanged from before)
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+      <h2 className="text-sm md:text-base font-semibold text-gray-700 mb-3">{title}</h2>
+      <ResponsiveContainer width="100%" height={200} minWidth={0}>
+        <PieChart>
+          <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={65}>
+            {chartData.map((_, i) => (
+              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(val) => formatCurrency(val)} />
+          <Legend iconSize={10} wrapperStyle={{ fontSize: '12px' }} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 const StatCard = ({ label, value, sub, color = 'orange' }) => {
   const colorMap = {
@@ -107,37 +163,17 @@ export default function Dashboard() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-        {/* Order Type Pie */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
-          <h2 className="text-sm md:text-base font-semibold text-gray-700 mb-3">Revenue by Order Type</h2>
-          <ResponsiveContainer width="100%" height={200} minWidth={0}>
-            <PieChart>
-              <Pie data={orderTypeChart} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={65}>
-                {orderTypeChart.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(val) => formatCurrency(val)} />
-              <Legend iconSize={10} wrapperStyle={{ fontSize: '12px' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      <RevenueBreakdownCard
+  title="Revenue by Order Type"
+  chartData={orderTypeChart}
+  formatCurrency={formatCurrency}
+/>
 
-        {/* Payment Method Pie */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
-          <h2 className="text-sm md:text-base font-semibold text-gray-700 mb-3">Revenue by Payment</h2>
-          <ResponsiveContainer width="100%" height={200} minWidth={0}>
-            <PieChart>
-              <Pie data={paymentChart} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={65}>
-                {paymentChart.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(val) => formatCurrency(val)} />
-              <Legend iconSize={10} wrapperStyle={{ fontSize: '12px' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+       <RevenueBreakdownCard
+  title="Revenue by Payment"
+  chartData={paymentChart}
+  formatCurrency={formatCurrency}
+/>
 
         {/* Top Selling Products — spans 2 cols on tablet, 1 on desktop */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5 md:col-span-2 lg:col-span-1">
