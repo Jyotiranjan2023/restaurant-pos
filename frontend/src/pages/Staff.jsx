@@ -8,6 +8,7 @@ import {
   deleteStaff,
 } from '../services/staffService'
 import Modal from '../components/Modal'
+import { useAuth } from '../context/AuthContext'
 
 const ROLES = ['ADMIN', 'WAITER', 'CHEF']
 
@@ -24,6 +25,7 @@ const roleIcons = {
 }
 
 export default function Staff() {
+  const { user: currentUser } = useAuth()
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -290,51 +292,83 @@ export default function Staff() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="grid grid-cols-2 gap-1.5 border-t border-gray-100 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedStaff(member)
-                    setNewRole(member.role)
-                    setShowRoleModal(true)
-                  }}
-                  className="text-xs font-semibold py-1.5 rounded-lg border border-orange-300 bg-orange-50 text-orange-600 hover:bg-orange-100"
-                >
-                  Change Role
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleStatus(member)}
-                  className={`text-xs font-semibold py-1.5 rounded-lg border transition-all ${
-                    member.active
-                      ? 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
-                      : 'bg-green-500 border-green-500 text-white hover:bg-green-600'
-                  }`}
-                >
-                  {member.active ? 'Deactivate' : 'Activate'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedStaff(member)
-                    setNewPassword('')
-                    setConfirmPassword('')
-                    setPasswordError('')
-                    setShowPasswordModal(true)
-                  }}
-                  className="text-xs font-semibold py-1.5 rounded-lg border border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                >
-                  Reset Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedStaff(member); setShowDeleteModal(true) }}
-                  className="text-xs font-semibold py-1.5 rounded-lg border border-red-300 bg-red-500 text-white hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
+            {/* Actions */}
+<div className="border-t border-gray-100 pt-3">
+  {(() => {
+    const isOwnAccount = currentUser?.userId === member.id
+
+    return (
+      <>
+        {/* "This is you" hint on own card */}
+        {isOwnAccount && (
+          <p className="text-xs text-gray-500 italic mb-2">
+            This is your account — destructive actions disabled
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-1.5">
+          {/* Change Role — hidden on own account */}
+          {!isOwnAccount && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStaff(member)
+                setNewRole(member.role)
+                setShowRoleModal(true)
+              }}
+              className="text-xs font-semibold py-1.5 rounded-lg border border-orange-300 bg-orange-50 text-orange-600 hover:bg-orange-100"
+            >
+              Change Role
+            </button>
+          )}
+
+          {/* Deactivate/Activate — hidden on own account */}
+          {!isOwnAccount && (
+            <button
+              type="button"
+              onClick={() => handleToggleStatus(member)}
+              className={`text-xs font-semibold py-1.5 rounded-lg border transition-all ${
+                member.active
+                  ? 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                  : 'bg-green-500 border-green-500 text-white hover:bg-green-600'
+              }`}
+            >
+              {member.active ? 'Deactivate' : 'Activate'}
+            </button>
+          )}
+
+          {/* Reset Password — always visible */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStaff(member)
+              setNewPassword('')
+              setConfirmPassword('')
+              setPasswordError('')
+              setShowPasswordModal(true)
+            }}
+            className={`text-xs font-semibold py-1.5 rounded-lg border border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100 ${
+              isOwnAccount ? 'col-span-2' : ''
+            }`}
+          >
+            Reset Password
+          </button>
+
+          {/* Delete — hidden on own account */}
+          {!isOwnAccount && (
+            <button
+              type="button"
+              onClick={() => { setSelectedStaff(member); setShowDeleteModal(true) }}
+              className="text-xs font-semibold py-1.5 rounded-lg border border-red-300 bg-red-500 text-white hover:bg-red-600"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      </>
+    )
+  })()}
+</div>
             </div>
           ))}
         </div>
