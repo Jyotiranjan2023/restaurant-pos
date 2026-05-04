@@ -36,8 +36,15 @@ export default function Inventory() {
   const [restockModal, setRestockModal] = useState(null); // ingredient object
   const [restockForm, setRestockForm] = useState({ quantity: '', notes: '' });
   const [restockError, setRestockError] = useState('');
+// Compute stock state per ingredient
+const getStockState = (ing) => {
+  if (ing.currentStock <= 0) return 'OUT';
+  if (ing.currentStock < ing.lowStockThreshold) return 'LOW';
+  return 'OK';
+};
 
-  const lowStockItems = ingredients.filter(i => i.lowStockAlert);
+const outOfStockItems = ingredients.filter(i => getStockState(i) === 'OUT');
+const lowStockItems = ingredients.filter(i => getStockState(i) === 'LOW');
 
   const openAdd = () => {
     setEditingId(null);
@@ -134,14 +141,19 @@ export default function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">Inventory</h1>
-          <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-            {ingredients.length} ingredients
-            {lowStockItems.length > 0 && (
-              <span className="ml-2 text-red-600 font-medium">
-                ⚠ {lowStockItems.length} low stock
-              </span>
-            )}
-          </p>
+        <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+  {ingredients.length} ingredients
+  {outOfStockItems.length > 0 && (
+    <span className="ml-2 text-red-600 font-medium">
+      ⚠ {outOfStockItems.length} out of stock
+    </span>
+  )}
+  {lowStockItems.length > 0 && (
+    <span className="ml-2 text-amber-600 font-medium">
+      ⚠ {lowStockItems.length} low stock
+    </span>
+  )}
+</p>
         </div>
         <div className="flex gap-2">
           <button onClick={refresh} className="px-3 py-2 text-xs md:text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
@@ -171,21 +183,32 @@ export default function Inventory() {
       {/* Ingredients Tab */}
       {tab === 'ingredients' && (
         <div className="space-y-3">
-          {ingredients.map(ing => (
-            <div
-              key={ing.id}
-              className={`bg-white rounded-xl border p-4 ${ing.lowStockAlert ? 'border-red-200' : 'border-gray-200'}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-800">{ing.name}</p>
-                    {ing.lowStockAlert && (
-                      <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                        Low Stock
-                      </span>
-                    )}
-                  </div>
+         {ingredients.map(ing => {
+  const stockState = getStockState(ing);
+  const borderClass =
+    stockState === 'OUT' ? 'border-red-300' :
+    stockState === 'LOW' ? 'border-amber-200' :
+    'border-gray-200';
+  return (
+  <div
+    key={ing.id}
+    className={`bg-white rounded-xl border p-4 ${borderClass}`}
+  >
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-gray-800">{ing.name}</p>
+          {stockState === 'OUT' && (
+            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
+              Out of Stock
+            </span>
+          )}
+          {stockState === 'LOW' && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+              Low Stock
+            </span>
+          )}
+        </div>
                   {ing.description && (
                     <p className="text-xs text-gray-400 mt-0.5">{ing.description}</p>
                   )}
@@ -218,10 +241,11 @@ export default function Inventory() {
                   >
                     Delete
                   </button>
-                </div>
+               </div>
               </div>
             </div>
-          ))}
+  );
+})}
         </div>
       )}
 
@@ -412,7 +436,7 @@ export default function Inventory() {
               >
                 {submitting ? 'Saving...' : 'Add Stock'}
               </button>
-            </div>
+         </div>
           </div>
         </div>
       )}
