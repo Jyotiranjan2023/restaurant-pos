@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { exportToCsv } from '../utils/csvExport'
 import {
   fetchSalesReport,
   fetchProductReport,
@@ -64,12 +65,100 @@ export default function Reports() {
     setData(null)
     setError('')
   }
+const handleExportCsv = () => {
+  if (!data) return
+  const dateRange = `${from}_to_${to}`
 
-  const handleQuickRange = (range) => {
-    setFrom(range.from)
-    setTo(range.to)
-    fetchReport(activeTab, range.from, range.to)
+  if (activeTab === 'Sales') {
+    const columns = [
+      { key: 'date', label: 'Date' },
+      { key: 'orderCount', label: 'Orders' },
+      { key: 'revenue', label: 'Revenue (INR)' },
+      { key: 'gst', label: 'GST (INR)' },
+      { key: 'discount', label: 'Discount (INR)' },
+    ]
+    const rows = (data.dailySales || [])
+      .filter(d => d.orderCount > 0)
+      .map(d => ({
+        date: d.date,
+        orderCount: d.orderCount,
+        revenue: Number(d.revenue).toFixed(2),
+        gst: Number(d.gst).toFixed(2),
+        discount: Number(d.discount).toFixed(2),
+      }))
+    exportToCsv(`sales_report_${dateRange}`, columns, rows)
   }
+
+  else if (activeTab === 'Products') {
+    const columns = [
+      { key: 'productName', label: 'Product' },
+      { key: 'categoryName', label: 'Category' },
+      { key: 'quantitySold', label: 'Quantity Sold' },
+      { key: 'revenue', label: 'Revenue (INR)' },
+      { key: 'avgPrice', label: 'Avg Price (INR)' },
+    ]
+    const rows = data.map(p => ({
+      productName: p.productName,
+      categoryName: p.categoryName,
+      quantitySold: p.quantitySold,
+      revenue: Number(p.revenue).toFixed(2),
+      avgPrice: Number(p.avgPrice).toFixed(2),
+    }))
+    exportToCsv(`products_report_${dateRange}`, columns, rows)
+  }
+
+  else if (activeTab === 'Staff') {
+    const columns = [
+      { key: 'fullName', label: 'Name' },
+      { key: 'username', label: 'Username' },
+      { key: 'role', label: 'Role' },
+      { key: 'ordersHandled', label: 'Orders Handled' },
+      { key: 'totalSales', label: 'Total Sales (INR)' },
+    ]
+    const rows = data.map(s => ({
+      fullName: s.fullName,
+      username: s.username,
+      role: s.role,
+      ordersHandled: s.ordersHandled,
+      totalSales: Number(s.totalSales).toFixed(2),
+    }))
+    exportToCsv(`staff_report_${dateRange}`, columns, rows)
+  }
+
+  else if (activeTab === 'GST') {
+    const columns = [
+      { key: 'gstRate', label: 'GST Rate (%)' },
+      { key: 'taxableAmount', label: 'Taxable Amount (INR)' },
+      { key: 'cgst', label: 'CGST (INR)' },
+      { key: 'sgst', label: 'SGST (INR)' },
+      { key: 'total', label: 'Total GST (INR)' },
+    ]
+    const rows = (data.rateBreakdowns || []).map(r => ({
+      gstRate: r.gstRate,
+      taxableAmount: Number(r.taxableAmount).toFixed(2),
+      cgst: Number(r.cgst).toFixed(2),
+      sgst: Number(r.sgst).toFixed(2),
+      total: Number(r.total).toFixed(2),
+    }))
+    exportToCsv(`gst_report_${dateRange}`, columns, rows)
+  }
+
+  else if (activeTab === 'Payments') {
+    const columns = [
+      { key: 'method', label: 'Payment Method' },
+      { key: 'transactionCount', label: 'Transactions' },
+      { key: 'totalAmount', label: 'Total Amount (INR)' },
+      { key: 'percentage', label: 'Percentage (%)' },
+    ]
+    const rows = data.map(p => ({
+      method: p.method,
+      transactionCount: p.transactionCount,
+      totalAmount: Number(p.totalAmount).toFixed(2),
+      percentage: Number(p.percentage).toFixed(1),
+    }))
+    exportToCsv(`payments_report_${dateRange}`, columns, rows)
+  }
+}
 
   return (
     <div>
@@ -160,6 +249,19 @@ export default function Reports() {
           </button>
         ))}
       </div>
+
+      {/* Export CSV button — only shows when data is loaded */}
+{!loading && data && (
+  <div className="flex justify-end mb-3">
+    <button
+      type="button"
+      onClick={handleExportCsv}
+      className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
+    >
+      ⬇ Export CSV
+    </button>
+  </div>
+)}
 
       {/* No data yet */}
       {!loading && !data && !error && (
