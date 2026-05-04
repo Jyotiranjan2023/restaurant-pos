@@ -15,18 +15,26 @@ export default function Bills() {
   const navigate = useNavigate()
   const { bills, loading, error, refetch } = useBills()
   const [activeTab, setActiveTab] = useState('ALL')
-  const [search, setSearch] = useState('')
+const [search, setSearch] = useState('')
+const [fromDate, setFromDate] = useState('')
+const [toDate, setToDate] = useState('')
 
   const filtered = bills.filter((b) => {
-    const matchStatus = activeTab === 'ALL' || b.status === activeTab
-    const q = search.toLowerCase()
-    const matchSearch =
-      !q ||
-      b.billNumber.toLowerCase().includes(q) ||
-      (b.customerName && b.customerName.toLowerCase().includes(q)) ||
-      (b.orderNumber && b.orderNumber.toLowerCase().includes(q))
-    return matchStatus && matchSearch
-  })
+  const matchStatus = activeTab === 'ALL' || b.status === activeTab
+  const q = search.toLowerCase()
+  const matchSearch =
+    !q ||
+    b.billNumber.toLowerCase().includes(q) ||
+    (b.customerName && b.customerName.toLowerCase().includes(q)) ||
+    (b.orderNumber && b.orderNumber.toLowerCase().includes(q))
+
+  // Date filter — compare just the date portion (YYYY-MM-DD)
+  const billDate = b.createdAt ? b.createdAt.slice(0, 10) : ''
+  const matchFrom = !fromDate || billDate >= fromDate
+  const matchTo = !toDate || billDate <= toDate
+
+  return matchStatus && matchSearch && matchFrom && matchTo
+})
 
   return (
     <div>
@@ -48,15 +56,45 @@ export default function Bills() {
       </div>
 
       {/* Search */}
-      <div className="mb-3">
-        <input
-          type="text"
-          placeholder="Search by bill number, order number or customer name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
-      </div>
+      {/* Search + Date Range */}
+<div className="space-y-2 mb-3">
+  <input
+    type="text"
+    placeholder="Search by bill number, order number or customer name..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+  />
+  <div className="flex flex-wrap gap-2 items-end">
+    <div className="flex-1 min-w-[140px]">
+      <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+      <input
+        type="date"
+        value={fromDate}
+        onChange={(e) => setFromDate(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+      />
+    </div>
+    <div className="flex-1 min-w-[140px]">
+      <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+      <input
+        type="date"
+        value={toDate}
+        onChange={(e) => setToDate(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+      />
+    </div>
+    {(fromDate || toDate) && (
+      <button
+        type="button"
+        onClick={() => { setFromDate(''); setToDate('') }}
+        className="text-xs text-gray-600 hover:text-gray-800 underline px-2 py-2"
+      >
+        Clear dates
+      </button>
+    )}
+  </div>
+</div>
 
       {/* Status Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -96,10 +134,14 @@ export default function Bills() {
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-400 text-sm">No bills found</p>
-        </div>
-      )}
+  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+    <p className="text-gray-400 text-sm">
+      {(fromDate || toDate || search || activeTab !== 'ALL')
+        ? 'No bills match your filters'
+        : 'No bills found'}
+    </p>
+  </div>
+)}
 
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-2">
