@@ -359,45 +359,45 @@ export default function POS() {
         </button>
       )}
 
-      {/* MENU + CART */}
-      <div className="grid grid-cols-12 gap-3" style={{ minHeight: '500px' }}>
-        <div className="col-span-2">
-          <CategorySidebar
-            categories={categories}
-            products={products}
-            selectedCategoryId={selectedCategoryId}
-            onSelect={setSelectedCategoryId}
-          />
-        </div>
+      {/* MENU + CART — stacked on mobile, 3-column on lg+ */}
+<div className="flex flex-col lg:grid lg:grid-cols-12 gap-3" style={{ minHeight: '500px' }}>
+  <div className="lg:col-span-2">
+    <CategorySidebar
+      categories={categories}
+      products={products}
+      selectedCategoryId={selectedCategoryId}
+      onSelect={setSelectedCategoryId}
+    />
+  </div>
 
-        <div className="col-span-7">
-          <div className="bg-white border border-gray-200 rounded-xl p-2 mb-2">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
-          </div>
-          <ProductGrid products={filteredProducts} onAdd={cart.addItem} />
-        </div>
+  <div className="lg:col-span-7">
+    <div className="bg-white border border-gray-200 rounded-xl p-2 mb-2">
+      <input
+        type="text"
+        placeholder="Search products..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+      />
+    </div>
+    <ProductGrid products={filteredProducts} onAdd={cart.addItem} />
+  </div>
 
-        <div className="col-span-3">
-          <CartPanel
-            items={cart.items}
-            orderType={orderType}
-            tableId={tableId}
-            onIncrement={cart.updateQuantity}
-            onDecrement={cart.updateQuantity}
-            onRemove={cart.removeItem}
-            onClear={cart.clearCart}
-            onSaveOrder={handleSaveOrder}
-            saving={saving}
-            isAddMode={isAddMode}
-          />
-        </div>
-      </div>
+  <div className="lg:col-span-3">
+    <CartPanel
+      items={cart.items}
+      orderType={orderType}
+      tableId={tableId}
+      onIncrement={cart.updateQuantity}
+      onDecrement={cart.updateQuantity}
+      onRemove={cart.removeItem}
+      onClear={cart.clearCart}
+      onSaveOrder={handleSaveOrder}
+      saving={saving}
+      isAddMode={isAddMode}
+    />
+  </div>
+</div>
     </div>
   )
 }
