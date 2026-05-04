@@ -225,31 +225,32 @@ export default function MenuAvailability() {
                         </p>
                       </div>
 
-                      {/* Status badge */}
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold shrink-0 ${
-                        product.available
-                          ? 'bg-green-50 text-green-700 border-green-300'
-                          : 'bg-red-50 text-red-600 border-red-300'
-                      }`}>
-                        {product.available ? '✅ Available' : '❌ Sold Out'}
-                      </span>
+                   {/* Status text + toggle */}
+<div className="flex items-center gap-2 shrink-0">
+  <span className={`text-xs font-semibold w-16 text-right ${
+    product.available ? 'text-green-700' : 'text-gray-400'
+  }`}>
+    {product.available ? 'Available' : 'Sold Out'}
+  </span>
+  <button
+    type="button"
+    role="switch"
+    aria-checked={product.available}
+    onClick={() => handleToggle(product)}
+    disabled={isUpdating}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+      product.available ? 'bg-green-500' : 'bg-gray-300'
+    }`}
+  >
+    <span
+      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+        product.available ? 'translate-x-6' : 'translate-x-1'
+      }`}
+    />
+  </button>
+</div>
 
-                      {/* Toggle button */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggle(product)}
-                        disabled={isUpdating}
-                        className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${
-                          product.available
-                            ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
-                            : 'bg-green-500 border-green-500 text-white hover:bg-green-600'
-                        }`}
-                      >
-                        {isUpdating
-                          ? '...'
-                          : product.available ? 'Mark Sold Out' : 'Mark Available'
-                        }
-                      </button>
+
                     </div>
                   )
                 })}
