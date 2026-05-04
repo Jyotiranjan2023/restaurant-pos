@@ -16,6 +16,10 @@ export default function OrderCard({ order, onClick }) {
   const typeStyle = orderTypeStyles[order.orderType] || 'bg-gray-100 text-gray-700'
   const typeLabel = orderTypeLabels[order.orderType] || order.orderType
 
+  const STALE_THRESHOLD_MS = 4 * 60 * 60 * 1000
+const ageMs = Date.now() - new Date(order.createdAt).getTime()
+const isStale = ageMs > STALE_THRESHOLD_MS
+
   const previewItems = order.items.slice(0, 3)
   const remainingCount = order.items.length - previewItems.length
 
@@ -35,12 +39,12 @@ export default function OrderCard({ order, onClick }) {
           <p className="font-bold text-gray-800 text-sm truncate">
             {order.orderNumber}
           </p>
-          <p
-            className="text-xs text-gray-500"
-            title={formatTime(order.createdAt)}
-          >
-            {timeAgo(order.createdAt)}
-          </p>
+         <p
+  className={`text-xs ${isStale ? 'text-amber-600 font-semibold' : 'text-gray-500'}`}
+  title={formatTime(order.createdAt)}
+>
+  {isStale && '⚠ '}{timeAgo(order.createdAt)}
+</p>
         </div>
         <div className="flex items-center gap-1.5 ml-2 flex-wrap justify-end">
           {/* Ready badge */}
