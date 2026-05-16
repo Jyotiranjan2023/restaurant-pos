@@ -28,7 +28,7 @@ public class Tenant {
     @Column(nullable = false)
     private Boolean active = true;
     
- // ===== NEW: Profile fields =====
+    // ===== NEW: Profile fields =====
     @Column(name = "logo_url")
     private String logoUrl;
 
@@ -95,6 +95,13 @@ public class Tenant {
     @Column(name = "default_order_type", length = 20)
     private String defaultOrderType = "DINE_IN";
 
+    // ===== NEW: Subscription fields =====
+    @Column(name = "current_subscription_id")
+    private Long currentSubscriptionId;
+
+    @Column(name = "is_lifetime_free")
+    private Boolean isLifetimeFree = false;
+
 
     // ===== Getters & Setters =====
     public Long getId() { return id; }
@@ -117,11 +124,13 @@ public class Tenant {
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    
     public String getGstNumber() { return gstNumber; }
     public void setGstNumber(String gstNumber) { this.gstNumber = gstNumber; }
 
     public String getFssaiNumber() { return fssaiNumber; }
     public void setFssaiNumber(String fssaiNumber) { this.fssaiNumber = fssaiNumber; }
+    
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
 
@@ -136,8 +145,6 @@ public class Tenant {
 
     public String getPincode() { return pincode; }
     public void setPincode(String pincode) { this.pincode = pincode; }
-
-    
 
     public String getWebsite() { return website; }
     public void setWebsite(String website) { this.website = website; }
@@ -192,4 +199,11 @@ public class Tenant {
 
     public String getDefaultOrderType() { return defaultOrderType; }
     public void setDefaultOrderType(String defaultOrderType) { this.defaultOrderType = defaultOrderType; }
+
+    // ===== NEW: Subscription Getters & Setters =====
+    public Long getCurrentSubscriptionId() { return currentSubscriptionId; }
+    public void setCurrentSubscriptionId(Long currentSubscriptionId) { this.currentSubscriptionId = currentSubscriptionId; }
+
+    public Boolean getIsLifetimeFree() { return isLifetimeFree; }
+    public void setIsLifetimeFree(Boolean isLifetimeFree) { this.isLifetimeFree = isLifetimeFree; }
 }
