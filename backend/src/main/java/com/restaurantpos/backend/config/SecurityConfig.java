@@ -47,7 +47,8 @@ public class SecurityConfig {
             			    "/api/auth/register-restaurant",
             			    "/api/auth/login",
             			    "/api/auth/forgot-password",
-            			    "/api/auth/reset-password"
+            			    "/api/auth/reset-password",
+            			    "/api/subscription-plans/public"
             			).permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 
