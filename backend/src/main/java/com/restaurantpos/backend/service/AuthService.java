@@ -2,6 +2,7 @@ package com.restaurantpos.backend.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.restaurantpos.backend.dto.request.LoginRequest;
 import com.restaurantpos.backend.dto.request.RegisterRestaurantRequest;
@@ -28,6 +29,9 @@ public class AuthService {
     private final UserRepository userRepo;
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
+    
+    @Autowired
+    private SubscriptionService subscriptionService;
 
     public AuthService(TenantRepository tenantRepo, UserRepository userRepo,
                        PasswordEncoder encoder, JwtUtil jwtUtil) {
@@ -67,6 +71,17 @@ public class AuthService {
         log.info("Restaurant registered successfully: tenant={} ('{}'), admin user={} ('{}')",
                 tenant.getId(), tenant.getRestaurantName(),
                 admin.getId(), admin.getUsername());
+
+        // 2.5. Create 7-day trial subscription for new tenant
+        try {
+            subscriptionService.createTrialSubscription(tenant.getId());
+            log.info("Trial subscription created for tenant {}", tenant.getId());
+        } catch (Exception e) {
+            // Don't fail signup if trial creation fails
+            // Tenant is still created — trial can be added manually later
+            log.error("Failed to create trial subscription for tenant {}: {}", 
+                tenant.getId(), e.getMessage());
+        }
 
         // 3. return token
         String token = jwtUtil.generateToken(admin.getId(), admin.getUsername(),
