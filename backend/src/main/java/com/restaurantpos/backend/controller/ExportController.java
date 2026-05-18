@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.annotation.RequiresFeature;
 import com.restaurantpos.backend.service.ExportService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +22,8 @@ public class ExportController {
         this.exportService = exportService;
     }
 
+    // 🔒 GATED
+    @RequiresFeature("has_csv_export")
     @GetMapping("/orders")
     public void exportOrders(
             @RequestParam String from,
@@ -29,6 +32,8 @@ public class ExportController {
         exportService.exportOrders(from, to, response);
     }
 
+    // 🔒 GATED
+    @RequiresFeature("has_csv_export")
     @GetMapping("/bills")
     public void exportBills(
             @RequestParam String from,
@@ -37,16 +42,22 @@ public class ExportController {
         exportService.exportBills(from, to, response);
     }
 
+    // 🔒 GATED
+    @RequiresFeature("has_csv_export")
     @GetMapping("/products")
     public void exportProducts(HttpServletResponse response) throws IOException {
         exportService.exportProducts(response);
     }
 
+    // 🔒 GATED
+    @RequiresFeature("has_csv_export")
     @GetMapping("/customers")
     public void exportCustomers(HttpServletResponse response) throws IOException {
         exportService.exportCustomers(response);
     }
 
+    // 🔒 GATED
+    @RequiresFeature("has_csv_export")
     @GetMapping("/sales")
     public void exportSales(
             @RequestParam String from,
@@ -55,6 +66,7 @@ public class ExportController {
         exportService.exportSales(from, to, response);
     }
 
+    // ✅ NOT GATED — GST is a legal/compliance need, available on all plans
     @GetMapping("/gst")
     public void exportGst(
             @RequestParam String from,

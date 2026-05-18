@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.annotation.RequiresFeature;
 import com.restaurantpos.backend.dto.response.*;
 import com.restaurantpos.backend.service.ReportService;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class ReportController {
         this.reportService = reportService;
     }
 
+    // ✅ NOT GATED — basic sales report available on all plans
     @GetMapping("/sales")
     public ResponseEntity<ApiResponse<SalesReportResponse>> getSalesReport(
             @RequestParam String from,
@@ -27,6 +29,8 @@ public class ReportController {
                 reportService.getSalesReport(from, to)));
     }
 
+    // 🔒 GATED — advanced product analytics
+    @RequiresFeature("has_all_reports")
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<List<ProductReportResponse>>> getProductReport(
             @RequestParam String from,
@@ -35,6 +39,8 @@ public class ReportController {
                 reportService.getProductReport(from, to)));
     }
 
+    // 🔒 GATED — staff performance is a premium feature
+    @RequiresFeature("has_all_reports")
     @GetMapping("/staff")
     public ResponseEntity<ApiResponse<List<StaffReportResponse>>> getStaffReport(
             @RequestParam String from,
@@ -43,6 +49,7 @@ public class ReportController {
                 reportService.getStaffReport(from, to)));
     }
 
+    // ✅ NOT GATED — GST is compliance, available on all plans (consistent with /export/gst)
     @GetMapping("/gst")
     public ResponseEntity<ApiResponse<GstReportResponse>> getGstReport(
             @RequestParam String from,
@@ -51,6 +58,8 @@ public class ReportController {
                 reportService.getGstReport(from, to)));
     }
 
+    // 🔒 GATED — payment method breakdown is a premium analytics feature
+    @RequiresFeature("has_all_reports")
     @GetMapping("/payment-methods")
     public ResponseEntity<ApiResponse<List<PaymentMethodReportResponse>>> getPaymentMethodReport(
             @RequestParam String from,

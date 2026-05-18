@@ -243,25 +243,34 @@ public class SubscriptionService {
     }
 
     /**
-     * Calculate days remaining until expiry.
+     * Calculate days remaining until expiry, rounded UP.
      * Returns null for LIFETIME_FREE.
+     * 
+     * Uses ceiling logic so a deadline 5 days 7 hours away shows as "6 days",
+     * matching user expectation and the frontend banner display.
      */
     private Integer calculateDaysRemaining(Subscription sub) {
         if (sub.getStatus() == SubscriptionStatus.LIFETIME_FREE) {
-            return null; // No expiry concept
+            return null;
         }
-        
+
         LocalDateTime relevant = sub.getExpiresAt();
         if (sub.getStatus() == SubscriptionStatus.TRIAL && sub.getTrialEndsAt() != null) {
             relevant = sub.getTrialEndsAt();
         } else if (sub.getStatus() == SubscriptionStatus.GRACE_PERIOD && sub.getGracePeriodEndsAt() != null) {
             relevant = sub.getGracePeriodEndsAt();
         }
-        
+
         if (relevant == null) return 0;
-        
-        long days = ChronoUnit.DAYS.between(LocalDateTime.now(), relevant);
-        return (int) Math.max(0, days);
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!relevant.isAfter(now)) return 0;
+
+        // Ceiling: any partial day counts as a full day
+        long totalSeconds = ChronoUnit.SECONDS.between(now, relevant);
+        long secondsPerDay = 86400;
+        long days = (totalSeconds + secondsPerDay - 1) / secondsPerDay;  // integer ceiling
+        return (int) days;
     }
 
     /**

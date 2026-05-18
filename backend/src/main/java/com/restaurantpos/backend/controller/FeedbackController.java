@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.annotation.RequiresFeature;
 import com.restaurantpos.backend.dto.request.FeedbackRequest;
 import com.restaurantpos.backend.dto.response.ApiResponse;
 import com.restaurantpos.backend.dto.response.FeedbackResponse;
@@ -25,6 +26,7 @@ public class FeedbackController {
         this.feedbackService = feedbackService;
     }
 
+    // ✅ NO GATE — customer/staff can always submit feedback (BASIC plan too)
     @PostMapping
     public ResponseEntity<ApiResponse<FeedbackResponse>> submit(
             @Valid @RequestBody FeedbackRequest req) {
@@ -32,24 +34,25 @@ public class FeedbackController {
                 feedbackService.submit(req)));
     }
 
+    // 🔒 GATED — viewing all feedback is a paid feature
+    @RequiresFeature("has_feedback")
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> findAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-
         Page<FeedbackResponse> result = feedbackService.findAll(page, size);
-
         Map<String, Object> response = new HashMap<>();
         response.put("content", result.getContent());
         response.put("totalElements", result.getTotalElements());
         response.put("totalPages", result.getTotalPages());
         response.put("currentPage", result.getNumber());
         response.put("pageSize", result.getSize());
-
         return ResponseEntity.ok(ApiResponse.success("Feedback list fetched", response));
     }
 
+    // 🔒 GATED — viewing individual feedback is a paid feature
+    @RequiresFeature("has_feedback")
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<FeedbackResponse>> findById(@PathVariable Long id) {
@@ -57,12 +60,15 @@ public class FeedbackController {
                 feedbackService.findById(id)));
     }
 
+    // ✅ NO GATE — checking feedback for a specific bill (used by customer-side flow)
     @GetMapping("/bill/{billId}")
     public ResponseEntity<ApiResponse<FeedbackResponse>> findByBillId(@PathVariable Long billId) {
         return ResponseEntity.ok(ApiResponse.success("Feedback fetched",
                 feedbackService.findByBillId(billId)));
     }
 
+    // 🔒 GATED — feedback analytics is a paid feature
+    @RequiresFeature("has_feedback")
     @GetMapping("/stats")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<FeedbackStatsResponse>> getStats() {
@@ -70,6 +76,7 @@ public class FeedbackController {
                 feedbackService.getStats()));
     }
 
+    // ✅ NO GATE — product rating is shown to customers on menu
     @GetMapping("/products/{productId}/rating")
     public ResponseEntity<ApiResponse<ProductRatingResponse>> getProductRating(
             @PathVariable Long productId) {
@@ -77,6 +84,8 @@ public class FeedbackController {
                 feedbackService.getProductRating(productId)));
     }
 
+    // 🔒 GATED — deleting feedback requires the paid feature
+    @RequiresFeature("has_feedback")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> delete(@PathVariable Long id) {
