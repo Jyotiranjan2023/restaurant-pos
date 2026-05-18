@@ -19,6 +19,9 @@ export const menuConfig = [
   { path: '/kitchen',        label: 'Kitchen Display',   icon: '👨‍🍳', roles: ['CHEF', 'ADMIN'] },
   { path: '/menu-availability', label: 'Menu Availability', icon: '✅', roles: ['CHEF', 'ADMIN'] },
 
+  // SUBSCRIPTION & BILLING
+  { path: '/subscription',   label: 'My Subscription',   icon: '💳', roles: ['ADMIN'] },
+
   // SHARED
   { path: '/settings',       label: 'Settings',          icon: '⚙️', roles: ['ADMIN'] },
   { path: '/profile',        label: 'My Profile',        icon: '👤', roles: ['ADMIN', 'WAITER', 'CHEF'] },
