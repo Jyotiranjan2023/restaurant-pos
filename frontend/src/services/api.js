@@ -24,14 +24,41 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Handle token expiry globally
+// Global handler for upgrade modal trigger (set by UpgradeModalProvider)
+let globalUpgradeModalTrigger = null
+
+export const setUpgradeModalTrigger = (trigger) => {
+  globalUpgradeModalTrigger = trigger
+}
+
+// Handle responses globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+
+    // 401 — token expired
+    if (status === 401) {
       localStorage.clear()
       window.location.href = '/login'
+      return Promise.reject(error)
     }
+
+    // 402 — feature gate triggered (subscription limit reached)
+    if (status === 402) {
+      const responseData = error.response?.data
+      const gateData = responseData?.data || {}
+
+      if (globalUpgradeModalTrigger) {
+        globalUpgradeModalTrigger({
+          message: responseData?.message || 'This feature requires an upgrade',
+          featureCode: gateData.featureCode,
+          currentPlan: gateData.currentPlan,
+          suggestedPlan: gateData.suggestedPlan,
+        })
+      }
+    }
+
     return Promise.reject(error)
   }
 )
