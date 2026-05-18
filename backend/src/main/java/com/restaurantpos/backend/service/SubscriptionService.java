@@ -1,5 +1,8 @@
 package com.restaurantpos.backend.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import com.restaurantpos.backend.entity.Tenant;
 import com.restaurantpos.backend.repository.TenantRepository;
 
@@ -70,13 +73,7 @@ public class SubscriptionService {
     
  // ========== WRITE OPERATIONS ==========
 
-    /**
-     * Create a 7-day TRIAL subscription for a new tenant.
-     * Used by AuthService when a new restaurant signs up.
-     * 
-     * Trial gets ENTERPRISE plan access (so they can try all features).
-     * Tenant must convert to paid plan before trial ends.
-     */
+    
     public SubscriptionResponse createTrialSubscription(Long tenantId) {
         // Safety check: don't create duplicate subscription
         if (subscriptionRepository.existsByTenantId(tenantId)) {
@@ -118,6 +115,91 @@ public class SubscriptionService {
         tenantRepository.save(tenant);
 
         return toResponse(saved);
+    }
+    
+ // ========== MAINTENANCE OPERATIONS (called by scheduler) ==========
+
+    /**
+     * Find all TRIAL subscriptions where trial period has ended.
+     * Transition them to GRACE_PERIOD (give 7 days to pay).
+     */
+    public int processExpiredTrials() {
+        List<Subscription> expiredTrials = subscriptionRepository.findExpiredTrials(
+                SubscriptionStatus.TRIAL,
+                LocalDateTime.now()
+        );
+
+        int count = 0;
+        for (Subscription sub : expiredTrials) {
+            sub.setStatus(SubscriptionStatus.GRACE_PERIOD);
+            sub.setGracePeriodEndsAt(LocalDateTime.now().plusDays(7));
+            subscriptionRepository.save(sub);
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * Find all ACTIVE subscriptions where renewal date has passed.
+     * Renewal payment must have failed — move to GRACE_PERIOD.
+     */
+    public int processExpiredActiveSubscriptions() {
+        List<Subscription> expired = subscriptionRepository.findExpiredActive(
+                SubscriptionStatus.ACTIVE,
+                LocalDateTime.now()
+        );
+
+        int count = 0;
+        for (Subscription sub : expired) {
+            sub.setStatus(SubscriptionStatus.GRACE_PERIOD);
+            sub.setGracePeriodEndsAt(LocalDateTime.now().plusDays(7));
+            subscriptionRepository.save(sub);
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * Find all GRACE_PERIOD subscriptions where grace period has ended.
+     * Suspend them — block all access.
+     */
+    public int processExpiredGracePeriods() {
+        List<Subscription> expired = subscriptionRepository.findExpiredGracePeriods(
+                SubscriptionStatus.GRACE_PERIOD,
+                LocalDateTime.now()
+        );
+
+        int count = 0;
+        for (Subscription sub : expired) {
+            sub.setStatus(SubscriptionStatus.SUSPENDED);
+            subscriptionRepository.save(sub);
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * Reset monthly order counter for all subscriptions.
+     * Called on the 1st of each month.
+     * 
+     * Only resets if last_order_count_reset_at was more than 25 days ago
+     * (protects against running this multiple times in one day).
+     */
+    public int resetMonthlyOrderCounters() {
+        List<Subscription> allSubs = subscriptionRepository.findAll();
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(25);
+        
+        int count = 0;
+        for (Subscription sub : allSubs) {
+            if (sub.getLastOrderCountResetAt() == null 
+                || sub.getLastOrderCountResetAt().isBefore(cutoff)) {
+                sub.setCurrentMonthOrders(0);
+                sub.setLastOrderCountResetAt(LocalDateTime.now());
+                subscriptionRepository.save(sub);
+                count++;
+            }
+        }
+        return count;
     }
 
     /**

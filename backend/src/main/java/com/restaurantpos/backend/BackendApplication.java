@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @org.springframework.context.annotation.EnableAspectJAutoProxy
+@org.springframework.scheduling.annotation.EnableScheduling
 public class BackendApplication {
 
 	public static void main(String[] args) {

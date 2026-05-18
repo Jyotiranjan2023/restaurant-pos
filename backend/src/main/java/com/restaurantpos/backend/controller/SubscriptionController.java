@@ -21,12 +21,9 @@ public class SubscriptionController {
      */
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<SubscriptionResponse>> getMySubscription() {
-
         Long tenantId = TenantContext.getCurrentTenantId();
-
         SubscriptionResponse subscription =
                 subscriptionService.getCurrentSubscription(tenantId);
-
         return ResponseEntity.ok(
                 new ApiResponse<>(true,
                         "Subscription fetched successfully",
@@ -40,14 +37,40 @@ public class SubscriptionController {
     @PostMapping("/test/create-trial/{tenantId}")
     public ResponseEntity<ApiResponse<SubscriptionResponse>> testCreateTrial(
             @PathVariable Long tenantId) {
-
         SubscriptionResponse trial =
                 subscriptionService.createTrialSubscription(tenantId);
-
         return ResponseEntity.ok(
                 new ApiResponse<>(true,
                         "Trial subscription created",
                         trial)
         );
+    }
+
+    /**
+     * TEMPORARY TEST ENDPOINT: Manually trigger daily maintenance.
+     * Used to test cron logic without waiting for 2 AM.
+     * WILL BE REMOVED in production.
+     */
+    @PostMapping("/test/run-maintenance")
+    public ResponseEntity<ApiResponse<String>> testRunMaintenance() {
+        int trials = subscriptionService.processExpiredTrials();
+        int active = subscriptionService.processExpiredActiveSubscriptions();
+        int grace = subscriptionService.processExpiredGracePeriods();
+        
+        String result = String.format(
+            "Maintenance complete. Trials expired: %d, Active expired: %d, Grace suspended: %d",
+            trials, active, grace
+        );
+        return ResponseEntity.ok(new ApiResponse<>(true, result, null));
+    }
+
+    /**
+     * TEMPORARY TEST ENDPOINT: Manually trigger monthly counter reset.
+     */
+    @PostMapping("/test/reset-counters")
+    public ResponseEntity<ApiResponse<String>> testResetCounters() {
+        int reset = subscriptionService.resetMonthlyOrderCounters();
+        String result = String.format("Counters reset for %d subscriptions", reset);
+        return ResponseEntity.ok(new ApiResponse<>(true, result, null));
     }
 }
