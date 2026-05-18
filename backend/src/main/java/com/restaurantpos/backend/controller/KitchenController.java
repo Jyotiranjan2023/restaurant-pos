@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.annotation.RequiresFeature;
 import com.restaurantpos.backend.dto.request.KitchenStatusRequest;
 import com.restaurantpos.backend.dto.response.ApiResponse;
 import com.restaurantpos.backend.dto.response.KitchenItemResponse;
@@ -20,19 +21,21 @@ public class KitchenController {
         this.kitchenService = kitchenService;
     }
 
+    @RequiresFeature("has_kitchen_display")
     @GetMapping("/items")
-    
     public ResponseEntity<ApiResponse<List<KitchenItemResponse>>> getKitchenItems() {
         return ResponseEntity.ok(ApiResponse.success("Kitchen items fetched",
                 kitchenService.getKitchenItems()));
     }
 
+    @RequiresFeature("has_kitchen_display")
     @GetMapping("/items/ready")
     public ResponseEntity<ApiResponse<List<KitchenItemResponse>>> getReadyItems() {
         return ResponseEntity.ok(ApiResponse.success("Ready items fetched",
                 kitchenService.getReadyItems()));
     }
 
+    @RequiresFeature("has_kitchen_display")
     @PatchMapping("/items/{itemId}/status")
     public ResponseEntity<ApiResponse<KitchenItemResponse>> updateStatus(
             @PathVariable Long itemId,

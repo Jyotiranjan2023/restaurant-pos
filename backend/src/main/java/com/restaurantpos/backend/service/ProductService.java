@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,8 @@ public class ProductService {
     private final CategoryRepository categoryRepo;
     private final TenantRepository tenantRepo;
     private final FileStorageService fileStorageService;
+    @Autowired
+    private FeatureGateService featureGateService;
     public ProductService(ProductRepository productRepo,
             CategoryRepository categoryRepo,
             TenantRepository tenantRepo,
@@ -37,6 +40,11 @@ this.fileStorageService = fileStorageService;   // ← NEW
     @Transactional
     public ProductResponse create(ProductRequest req) {
         Long tenantId = TenantContext.getCurrentTenantId();
+
+        // SUBSCRIPTION LIMIT CHECK: max_menu_items
+        // Count only ACTIVE products (soft-deleted ones don't count)
+        long currentProductCount = productRepo.findByTenantIdAndActiveTrue(tenantId).size();
+        featureGateService.checkLimit("max_menu_items", currentProductCount);
 
         Category category = categoryRepo.findByIdAndTenantId(req.getCategoryId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));

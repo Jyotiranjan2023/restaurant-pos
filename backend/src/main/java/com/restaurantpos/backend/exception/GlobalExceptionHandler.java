@@ -26,6 +26,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
     }
+    
+    @ExceptionHandler(FeatureGateException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleFeatureGate(FeatureGateException ex) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("featureCode", ex.getFeatureCode());
+        details.put("currentPlan", ex.getCurrentPlan());
+        details.put("suggestedPlan", ex.getSuggestedPlan());
+        details.put("upgradeRequired", true);
+        
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(new ApiResponse<>(false, ex.getMessage(), details));
+    }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Object>> handleBadCreds(BadCredentialsException ex) {

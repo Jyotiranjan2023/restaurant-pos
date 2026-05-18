@@ -1,5 +1,8 @@
 package com.restaurantpos.backend.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import com.restaurantpos.backend.entity.Subscription;
+import com.restaurantpos.backend.repository.SubscriptionRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -63,7 +66,11 @@ public class OrderService {
     private final ProductAddonRepository addonRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final NotificationService notificationService;
+    @Autowired
+    private FeatureGateService featureGateService;
 
+    @Autowired
+    private SubscriptionRepository subscriptionRepository;
     public OrderService(OrderRepository orderRepo,
             ProductRepository productRepo,
             RestaurantTableRepository tableRepo,
@@ -91,6 +98,10 @@ this.notificationService = notificationService;   // ← NEW
     public OrderResponse createOrder(CreateOrderRequest req) {
         UserPrincipal principal = TenantContext.getCurrentUser();
         Long tenantId = principal.getTenantId();
+
+        // SUBSCRIPTION CHECK: monthly order limit
+        // Must be FIRST — fail fast before any DB work
+        featureGateService.checkMonthlyOrderLimit();
 
         Tenant tenant = tenantRepo.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
@@ -143,13 +154,17 @@ this.notificationService = notificationService;   // ← NEW
 
         order = orderRepo.save(order);
 
+        // SUBSCRIPTION COUNTER: increment monthly order count
+        // Done AFTER order save — only count successfully created orders
+        incrementMonthlyOrderCount(tenantId);
+
         // Update table status
         if (table != null) {
             table.setStatus(TableStatus.RUNNING);
             tableRepo.save(table);
         }
 
-     // Broadcast each item to kitchen AND deduct inventory stock
+        // Broadcast each item to kitchen AND deduct inventory stock
         for (OrderItem item : order.getItems()) {
             kitchenService.broadcastNewItem(item);
             inventoryService.deductStockForOrderItem(item);
@@ -168,6 +183,7 @@ this.notificationService = notificationService;   // ← NEW
 
         return toResponse(order);
     }
+    
 
     public OrderResponse findById(Long id) {
         Long tenantId = TenantContext.getCurrentTenantId();
@@ -523,6 +539,20 @@ this.notificationService = notificationService;   // ← NEW
 
         return orderRepo.findByTenantId(tenantId, pageable)
                 .map(this::toResponse);
+    }
+    
+    /**
+     * Increment the monthly order counter on the subscription.
+     * Used to enforce max_orders_per_month limit.
+     * Silently does nothing if no subscription found (LIFETIME_FREE tenants pass through).
+     */
+    private void incrementMonthlyOrderCount(Long tenantId) {
+        subscriptionRepository.findByTenantId(tenantId).ifPresent(sub -> {
+            Integer current = sub.getCurrentMonthOrders();
+            if (current == null) current = 0;
+            sub.setCurrentMonthOrders(current + 1);
+            subscriptionRepository.save(sub);
+        });
     }
     
 }

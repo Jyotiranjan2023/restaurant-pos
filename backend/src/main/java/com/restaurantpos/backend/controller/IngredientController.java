@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.annotation.RequiresFeature;
 import com.restaurantpos.backend.dto.request.IngredientRequest;
 import com.restaurantpos.backend.dto.request.RestockRequest;
 import com.restaurantpos.backend.dto.response.ApiResponse;
@@ -9,7 +10,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -22,6 +22,7 @@ public class IngredientController {
         this.inventoryService = inventoryService;
     }
 
+    @RequiresFeature("has_inventory")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<IngredientResponse>> create(
@@ -30,18 +31,21 @@ public class IngredientController {
                 inventoryService.createIngredient(req)));
     }
 
+    @RequiresFeature("has_inventory")
     @GetMapping
     public ResponseEntity<ApiResponse<List<IngredientResponse>>> findAll() {
         return ResponseEntity.ok(ApiResponse.success("Ingredients fetched",
                 inventoryService.findAllIngredients()));
     }
 
+    @RequiresFeature("has_inventory")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<IngredientResponse>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Ingredient fetched",
                 inventoryService.findIngredientById(id)));
     }
 
+    @RequiresFeature("has_inventory")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<IngredientResponse>> update(
@@ -51,6 +55,7 @@ public class IngredientController {
                 inventoryService.updateIngredient(id, req)));
     }
 
+    @RequiresFeature("has_inventory")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> delete(@PathVariable Long id) {
@@ -58,12 +63,14 @@ public class IngredientController {
         return ResponseEntity.ok(ApiResponse.success("Ingredient deleted", null));
     }
 
+    @RequiresFeature("has_inventory")
     @GetMapping("/low-stock")
     public ResponseEntity<ApiResponse<List<IngredientResponse>>> findLowStock() {
         return ResponseEntity.ok(ApiResponse.success("Low stock ingredients fetched",
                 inventoryService.findLowStockIngredients()));
     }
 
+    @RequiresFeature("has_inventory")
     @PostMapping("/{id}/restock")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<IngredientResponse>> restock(

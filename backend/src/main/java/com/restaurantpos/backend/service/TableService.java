@@ -1,5 +1,6 @@
 package com.restaurantpos.backend.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import com.restaurantpos.backend.dto.request.TableRequest;
 import com.restaurantpos.backend.dto.request.TableStatusRequest;
 import com.restaurantpos.backend.dto.response.TableResponse;
@@ -21,6 +22,9 @@ public class TableService {
 
     private final RestaurantTableRepository tableRepo;
     private final TenantRepository tenantRepo;
+    
+    @Autowired
+    private FeatureGateService featureGateService;
 
     public TableService(RestaurantTableRepository tableRepo, TenantRepository tenantRepo) {
         this.tableRepo = tableRepo;
@@ -30,6 +34,10 @@ public class TableService {
     @Transactional
     public TableResponse create(TableRequest req) {
         Long tenantId = TenantContext.getCurrentTenantId();
+
+        // SUBSCRIPTION LIMIT CHECK: max_tables
+        long currentTableCount = tableRepo.findByTenantIdAndActiveTrueOrderByTableNumberAsc(tenantId).size();
+        featureGateService.checkLimit("max_tables", currentTableCount);
 
         if (tableRepo.existsByTableNumberAndTenantId(req.getTableNumber(), tenantId))
             throw new BadRequestException("Table number " + req.getTableNumber() + " already exists");

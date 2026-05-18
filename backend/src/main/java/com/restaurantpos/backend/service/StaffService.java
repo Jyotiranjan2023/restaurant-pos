@@ -14,6 +14,7 @@ import com.restaurantpos.backend.repository.TenantRepository;
 import com.restaurantpos.backend.repository.UserRepository;
 import com.restaurantpos.backend.security.TenantContext;
 import com.restaurantpos.backend.security.UserPrincipal;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,9 @@ public class StaffService {
     private final UserRepository userRepo;
     private final TenantRepository tenantRepo;
     private final PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private FeatureGateService featureGateService;
 
     public StaffService(UserRepository userRepo,
                         TenantRepository tenantRepo,
@@ -48,6 +52,11 @@ public class StaffService {
         if (userRepo.existsByUsernameAndTenantId(req.getUsername(), tenantId))
             throw new BadRequestException("Username '" + req.getUsername() + "' already exists");
 
+        // SUBSCRIPTION LIMIT CHECK: max_staff
+        // Count includes the ADMIN owner + all staff
+        long currentStaffCount = userRepo.findByTenantIdOrderByCreatedAtDesc(tenantId).size();
+        featureGateService.checkLimit("max_staff", currentStaffCount);
+
         Tenant tenant = tenantRepo.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
@@ -60,6 +69,7 @@ public class StaffService {
 
         return toResponse(userRepo.save(staff));
     }
+
     public List<StaffResponse> findAllStaff() {
         Long tenantId = TenantContext.getCurrentTenantId();
         return userRepo.findByTenantIdOrderByCreatedAtDesc(tenantId).stream()
