@@ -13,4 +13,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsernameAndTenantId(String username, Long tenantId);
 
     List<User> findByTenantIdOrderByCreatedAtDesc(Long tenantId);   // ← NEW
+
+	Long countByTenantId(Long tenantId);
 }

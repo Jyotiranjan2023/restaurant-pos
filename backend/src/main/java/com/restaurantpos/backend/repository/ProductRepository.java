@@ -12,4 +12,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByCategoryIdAndTenantIdAndActiveTrue(Long categoryId, Long tenantId);
 
     Optional<Product> findByIdAndTenantId(Long id, Long tenantId);
+    long countByTenantId(Long tenantId);
 }

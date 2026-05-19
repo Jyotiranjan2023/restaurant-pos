@@ -44,12 +44,13 @@ public class SecurityConfig {
 
                 // ✅ PUBLIC ENDPOINTS
             		.requestMatchers(
-            			    "/api/auth/register-restaurant",
-            			    "/api/auth/login",
-            			    "/api/auth/forgot-password",
-            			    "/api/auth/reset-password",
-            			    "/api/subscription-plans/public"
-            			).permitAll()
+            		        "/api/auth/register-restaurant",
+            		        "/api/auth/login",
+            		        "/api/auth/forgot-password",
+            		        "/api/auth/reset-password",
+            		        "/api/subscription-plans/public",
+            		        "/api/super-admin/login"
+            		    ).permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 
 

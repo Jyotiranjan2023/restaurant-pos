@@ -58,4 +58,38 @@ public class JwtUtil {
         try { parseToken(token); return true; }
         catch (Exception e) { return false; }
     }
+    /**
+     * Generate JWT token for a super admin.
+     * No tenantId — super admin is cross-tenant.
+     * Includes "superAdmin: true" claim for filter/middleware identification.
+     */
+    public String generateSuperAdminToken(Long superAdminId, String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", superAdminId);
+        claims.put("role", "SUPER_ADMIN");
+        claims.put("superAdmin", true);
+        // No tenantId — super admin has no tenant
+
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getKey())
+                .compact();
+    }
+
+    /**
+     * Check if a token belongs to a super admin.
+     * Returns false if claim missing or token invalid.
+     */
+    public boolean isSuperAdminToken(String token) {
+        try {
+            Boolean flag = parseToken(token).get("superAdmin", Boolean.class);
+            return Boolean.TRUE.equals(flag);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
 }
