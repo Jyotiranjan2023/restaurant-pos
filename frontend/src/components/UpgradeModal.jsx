@@ -41,10 +41,10 @@ const UpgradeModal = () => {
     // Check if this is a suspension/cancellation (different UX)
     const isAccessIssue = ['subscription_suspended', 'subscription_cancelled'].includes(gateInfo.featureCode);
 
-    const handleUpgrade = () => {
-        hideUpgradeModal();
-        navigate('/subscription');
-    };
+   const handleUpgrade = () => {
+    hideUpgradeModal();
+    navigate('/upgrade');   // ← changed
+};
 
     const handleMaybeLater = () => {
         hideUpgradeModal();
@@ -132,7 +132,7 @@ const UpgradeModal = () => {
                                 : 'bg-orange-500 hover:bg-orange-600'
                         }`}
                     >
-                        {isAccessIssue ? 'Renew Now' : 'Upgrade Now'}
+                        {isAccessIssue ? 'Renew Now' : 'Upgrade Now'} 
                     </button>
                 </div>
             </div>

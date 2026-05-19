@@ -48,7 +48,7 @@ export default function SubscriptionBanner() {
           </span>
         </div>
         <button
-          onClick={() => navigate('/subscription')}
+         onClick={() => navigate('/upgrade')}
           className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
         >
           Upgrade Now
@@ -71,7 +71,7 @@ export default function SubscriptionBanner() {
           </span>
         </div>
         <button
-          onClick={() => navigate('/subscription')}
+          onClick={() => navigate('/upgrade')}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
         >
           Pay Now

@@ -1,6 +1,8 @@
 import OrderDetail from './pages/OrderDetail'
 import { Routes, Route, Navigate } from 'react-router-dom'
 
+
+import Upgrade from './pages/Upgrade'
 import Subscription from './pages/Subscription';
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -47,6 +49,7 @@ export default function App() {
         <Route path="/settings" element={<ProtectedRoute allowedRoles={['ADMIN']}><Settings /></ProtectedRoute>} />
         <Route path="/bills" element={<ProtectedRoute allowedRoles={['ADMIN']}><Bills /></ProtectedRoute>} />
         <Route path="/subscription" element={<ProtectedRoute allowedRoles={['ADMIN']}><Subscription /></ProtectedRoute>} />
+        <Route path="/upgrade" element={<ProtectedRoute allowedRoles={['ADMIN']}><Upgrade /></ProtectedRoute>} />
 
         {/* Admin + Waiter */}
         <Route path="/pos" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><POS /></ProtectedRoute>} />
