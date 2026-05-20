@@ -78,4 +78,5 @@ spring.log
 # Database dumps
 # ============================================
 *.sql.bak
-*.dump
+*.dump"backup_before_subscriptions.sql" 
+"*.sql.backup" 
