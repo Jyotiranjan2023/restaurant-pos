@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { loginUser } from '../services/authService'
 import { useAuth } from '../context/AuthContext'
@@ -17,39 +17,38 @@ export default function Login() {
   } = useForm()
 
   const onSubmit = async (data) => {
-  setError('')
-  setLoading(true)
-  try {
-    const res = await loginUser(data.tenantId, data.username, data.password)
-    if (res.success) {
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('user', JSON.stringify(res.data))
-      login(res.data)
+    setError('')
+    setLoading(true)
+    try {
+      const res = await loginUser(data.restaurantEmail, data.username, data.password)
+      if (res.success) {
+        localStorage.setItem('token', res.data.token)
+        localStorage.setItem('user', JSON.stringify(res.data))
+        login(res.data)
 
-      // Redirect based on role
-      const role = res.data.role
-      if (role === 'ADMIN') {
-        navigate('/dashboard')
-      } else if (role === 'WAITER') {
-        navigate('/pos')
-      } else if (role === 'CHEF') {
-        navigate('/kitchen')
+        const role = res.data.role
+        if (role === 'ADMIN') {
+          navigate('/dashboard')
+        } else if (role === 'WAITER') {
+          navigate('/pos')
+        } else if (role === 'CHEF') {
+          navigate('/kitchen')
+        } else {
+          navigate('/profile')
+        }
       } else {
-        navigate('/profile')
+        setError('Login failed. Check your credentials.')
       }
-    } else {
-      setError('Login failed. Check your credentials.')
+    } catch (err) {
+      setError(err.response?.data?.message || 'Server error. Try again.')
+    } finally {
+      setLoading(false)
     }
-  } catch (err) {
-    setError(err.response?.data?.message || 'Server error. Try again.')
-  } finally {
-    setLoading(false)
   }
-}
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 sm:p-8">
 
         {/* Logo / Header */}
         <div className="text-center mb-8">
@@ -70,19 +69,26 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-          {/* Tenant ID */}
+          {/* Restaurant Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tenant ID
+              Restaurant Email
             </label>
             <input
-              type="number"
-              placeholder="Enter tenant ID"
+              type="email"
+              placeholder="restaurant@example.com"
+              autoComplete="email"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              {...register('tenantId', { required: 'Tenant ID is required' })}
+              {...register('restaurantEmail', {
+                required: 'Restaurant email is required',
+                pattern: {
+                  value: /^\S+@\S+\.\S+$/,
+                  message: 'Enter a valid email'
+                }
+              })}
             />
-            {errors.tenantId && (
-              <p className="text-red-500 text-xs mt-1">{errors.tenantId.message}</p>
+            {errors.restaurantEmail && (
+              <p className="text-red-500 text-xs mt-1">{errors.restaurantEmail.message}</p>
             )}
           </div>
 
@@ -93,7 +99,8 @@ export default function Login() {
             </label>
             <input
               type="text"
-              placeholder="Enter username"
+              placeholder="Your username"
+              autoComplete="username"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
               {...register('username', { required: 'Username is required' })}
             />
@@ -110,6 +117,7 @@ export default function Login() {
             <input
               type="password"
               placeholder="Enter password"
+              autoComplete="current-password"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
               {...register('password', { required: 'Password is required' })}
             />
@@ -128,6 +136,17 @@ export default function Login() {
           </button>
 
         </form>
+
+        {/* Register link */}
+        <div className="text-center mt-6 pt-6 border-t border-gray-200">
+          <p className="text-sm text-gray-600">
+            New restaurant?{' '}
+            <Link to="/register" className="text-orange-600 hover:text-orange-700 font-medium">
+              Register your business
+            </Link>
+          </p>
+        </div>
+
       </div>
     </div>
   )

@@ -1,6 +1,15 @@
 package com.restaurantpos.backend.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import com.restaurantpos.backend.enums.SubscriptionStatus;
+import java.util.List;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import com.restaurantpos.backend.entity.Subscription;
+import com.restaurantpos.backend.entity.Tenant;
 import com.restaurantpos.backend.enums.SubscriptionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -54,4 +63,14 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     // Find by Razorpay subscription ID (for webhook handling)
     Optional<Subscription> findByRazorpaySubscriptionId(String razorpaySubscriptionId);
+    
+    long countByStatus(SubscriptionStatus status);
+
+    @Query("SELECT COUNT(s) FROM Subscription s WHERE s.status IN :statuses")
+    long countByStatusIn(@Param("statuses") List<SubscriptionStatus> statuses);
+    List<Subscription> findByTenantIdIn(java.util.List<Long> tenantIds);
+    
+    @Query("SELECT t FROM Tenant t WHERE " +
+    	       "(:search IS NULL OR LOWER(t.restaurantName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(t.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+    	Page<Tenant> searchByName(@Param("search") String search, Pageable pageable);
 }

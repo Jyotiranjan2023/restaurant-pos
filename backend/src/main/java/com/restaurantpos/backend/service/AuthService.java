@@ -1,5 +1,7 @@
 package com.restaurantpos.backend.service;
 
+
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,36 +93,47 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest req) {
-        log.info("Login attempt for user '{}' in tenant {}",
-                req.getUsername(), req.getTenantId());
+        log.info("Login attempt for user '{}' at restaurant '{}'",
+                req.getUsername(), req.getRestaurantEmail());
 
-        User user = userRepo.findByUsernameAndTenantId(req.getUsername(), req.getTenantId())
+        // Step 1: Find tenant by restaurant email
+        Tenant tenant = tenantRepo.findByEmail(req.getRestaurantEmail())
                 .orElseThrow(() -> {
-                    log.warn("Login failed: user '{}' not found in tenant {}",
-                            req.getUsername(), req.getTenantId());
+                    log.warn("Login failed: no restaurant with email '{}'", req.getRestaurantEmail());
                     return new BadCredentialsException("Invalid credentials");
                 });
 
+        // Step 2: Find user by username within that tenant
+        User user = userRepo.findByUsernameAndTenantId(req.getUsername(), tenant.getId())
+                .orElseThrow(() -> {
+                    log.warn("Login failed: user '{}' not found in tenant {}",
+                            req.getUsername(), tenant.getId());
+                    return new BadCredentialsException("Invalid credentials");
+                });
+
+        // Step 3: Check user is active
         if (!Boolean.TRUE.equals(user.getActive())) {
             log.warn("Login failed: user '{}' (tenant {}) is deactivated",
-                    user.getUsername(), user.getTenant().getId());
+                    user.getUsername(), tenant.getId());
             throw new BadRequestException("User account is deactivated");
         }
 
+        // Step 4: Verify password
         if (!encoder.matches(req.getPassword(), user.getPassword())) {
             log.warn("Login failed: wrong password for user '{}' (tenant {})",
-                    user.getUsername(), user.getTenant().getId());
+                    user.getUsername(), tenant.getId());
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        // Step 5: Generate token
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(),
-                                             user.getRole().name(), user.getTenant().getId());
+                                             user.getRole().name(), tenant.getId());
 
         log.info("Login successful: user '{}' (role={}, tenant={})",
-                user.getUsername(), user.getRole(), user.getTenant().getId());
+                user.getUsername(), user.getRole(), tenant.getId());
 
         return new AuthResponse(token, user.getId(), user.getUsername(), user.getFullName(),
-                                user.getRole().name(), user.getTenant().getId(),
-                                user.getTenant().getRestaurantName());
+                                user.getRole().name(), tenant.getId(),
+                                tenant.getRestaurantName());
     }
 }

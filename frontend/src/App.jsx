@@ -1,14 +1,17 @@
-import OrderDetail from './pages/OrderDetail'
 import { Routes, Route, Navigate } from 'react-router-dom'
 
-
+import Register from './pages/Register'
+import SuperAdminLayout from './components/SuperAdminLayout'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import SuperAdminLogin from './pages/SuperAdminLogin'
 import Upgrade from './pages/Upgrade'
-import Subscription from './pages/Subscription';
+import Subscription from './pages/Subscription'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import POS from './pages/POS'
 import Tables from './pages/Tables'
 import RunningOrders from './pages/RunningOrders'
+import OrderDetail from './pages/OrderDetail'
 import Menu from './pages/Menu'
 import Inventory from './pages/Inventory'
 import Customers from './pages/Customers'
@@ -20,17 +23,32 @@ import Kitchen from './pages/Kitchen'
 import MenuAvailability from './pages/MenuAvailability'
 import Profile from './pages/Profile'
 import Unauthorized from './pages/Unauthorized'
+import Bills from './pages/Bills'
+import BillDetail from './pages/BillDetail'
+
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import BillDetail from './pages/BillDetail'
-import Bills from './pages/Bills'
+import SuperAdminProtectedRoute from './components/SuperAdminProtectedRoute'
 
 export default function App() {
   return (
     <Routes>
+      {/* Public auth routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/super-admin/login" element={<SuperAdminLogin />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/register" element={<Register />} />
+      {/* Super admin protected routes */}
+      <Route element={
+        <SuperAdminProtectedRoute>
+          <SuperAdminLayout />
+        </SuperAdminProtectedRoute>
+      }>
+        <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+        {/* /super-admin/tenants and /super-admin/plans will go here later */}
+      </Route>
 
+      {/* Tenant protected routes */}
       <Route
         element={
           <ProtectedRoute>
@@ -38,7 +56,6 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        {/* Admin only */}
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><Dashboard /></ProtectedRoute>} />
         <Route path="/menu" element={<ProtectedRoute allowedRoles={['ADMIN']}><Menu /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute allowedRoles={['ADMIN']}><Inventory /></ProtectedRoute>} />
@@ -51,21 +68,22 @@ export default function App() {
         <Route path="/subscription" element={<ProtectedRoute allowedRoles={['ADMIN']}><Subscription /></ProtectedRoute>} />
         <Route path="/upgrade" element={<ProtectedRoute allowedRoles={['ADMIN']}><Upgrade /></ProtectedRoute>} />
 
-        {/* Admin + Waiter */}
         <Route path="/pos" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><POS /></ProtectedRoute>} />
         <Route path="/tables" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><Tables /></ProtectedRoute>} />
         <Route path="/orders" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><RunningOrders /></ProtectedRoute>} />
         <Route path="/orders/:id" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><OrderDetail /></ProtectedRoute>} />
         <Route path="/bills/:id" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><BillDetail /></ProtectedRoute>} />
 
-        {/* Chef + Admin */}
         <Route path="/kitchen" element={<ProtectedRoute allowedRoles={['CHEF', 'ADMIN']}><Kitchen /></ProtectedRoute>} />
         <Route path="/menu-availability" element={<ProtectedRoute allowedRoles={['CHEF', 'ADMIN']}><MenuAvailability /></ProtectedRoute>} />
 
-        {/* All roles */}
         <Route path="/profile" element={<Profile />} />
       </Route>
 
+      {/* Super admin path fallback — unknown /super-admin/* paths go to super admin login */}
+      <Route path="/super-admin/*" element={<Navigate to="/super-admin/login" />} />
+
+      {/* Catch-all — everything else falls to tenant login. MUST be last. */}
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   )

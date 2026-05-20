@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { SuperAdminAuthProvider } from './context/SuperAdminAuthContext';
 import { AuthProvider } from './context/AuthContext'
 import { UpgradeModalProvider } from './context/UpgradeModalContext'
 import App from './App'
@@ -10,10 +11,12 @@ import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <AuthProvider>
-      <UpgradeModalProvider>
+     <SuperAdminAuthProvider>
+    <UpgradeModalProvider>
         <App />
         <UpgradeModal />
-      </UpgradeModalProvider>
+    </UpgradeModalProvider>
+</SuperAdminAuthProvider>
     </AuthProvider>
   </BrowserRouter>
 )

@@ -58,12 +58,34 @@ public class SuperAdminTenantService {
      * List all tenants paginated, newest first.
      */
     @Transactional(readOnly = true)
-    public Page<TenantSummaryResponse> listAllTenants(int page, int size) {
+    public Page<TenantSummaryResponse> listAllTenants(int page, int size, String search, String status) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Tenant> tenants = tenantRepository.findAll(pageable);
-        return tenants.map(this::toSummary);
-    }
 
+        // Step 1: Search filter (name/email) at DB level
+        Page<Tenant> tenants;
+        if (search != null && !search.trim().isEmpty()) {
+            tenants = tenantRepository.searchByName(search.trim(), pageable);
+        } else {
+            tenants = tenantRepository.findAll(pageable);
+        }
+
+        // Step 2: Convert to DTOs (this fetches subscription info)
+        Page<TenantSummaryResponse> dtoPage = tenants.map(this::toSummary);
+
+        // Step 3: Status filter (post-fetch, since status is on Subscription not Tenant)
+        // Note: this filters the current page. For 1000s of tenants you'd want
+        // to push status filter to a JOIN query.
+        if (status != null && !status.trim().isEmpty()) {
+            java.util.List<TenantSummaryResponse> filtered = dtoPage.getContent().stream()
+                .filter(t -> status.equalsIgnoreCase(
+                    t.getSubscriptionStatus() != null ? t.getSubscriptionStatus().toString() : null
+                ))
+                .collect(java.util.stream.Collectors.toList());
+            return new org.springframework.data.domain.PageImpl<>(filtered, pageable, filtered.size());
+        }
+
+        return dtoPage;
+    }
     /**
      * Get full detail of a single tenant.
      */

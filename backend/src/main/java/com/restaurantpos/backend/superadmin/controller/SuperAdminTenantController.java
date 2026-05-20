@@ -31,9 +31,11 @@ public class SuperAdminTenantController {
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> listTenants(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status) {
 
-        Page<TenantSummaryResponse> result = tenantService.listAllTenants(page, size);
+        Page<TenantSummaryResponse> result = tenantService.listAllTenants(page, size, search, status);
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", result.getContent());
