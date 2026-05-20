@@ -34,13 +34,20 @@ export default function Upgrade() {
 
   // Plan rank for comparing upgrade vs downgrade
   const planRank = { BASIC: 1, PRO: 2, ENTERPRISE: 3 }
-
-  const handleChoose = (planCode) => {
-    // Razorpay not ready yet — honest message
-    alert(
-      `Payment system is launching soon. To upgrade to ${planCode}, please contact support@yourrestaurant.com or call us.`
-    )
-  }
+const handleChoose = async (planCode) => {
+    try {
+        const res = await subscriptionService.createCheckout(planCode)
+        if (res.success && res.data?.shortUrl) {
+            // Redirect customer to Razorpay payment page
+            window.location.href = res.data.shortUrl
+        } else {
+            alert('Failed to start checkout. Please try again.')
+        }
+    } catch (err) {
+        const message = err.response?.data?.message || 'Checkout failed. Please try again.'
+        alert(message)
+    }
+}
 
   if (loading) {
     return (

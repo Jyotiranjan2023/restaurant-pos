@@ -31,6 +31,14 @@ const subscriptionService = {
         const response = await api.get(`/api/subscription-plans/code/${code}`);
         return response.data;
     },
+    /**
+     * Create checkout for upgrading to a plan.
+     * Returns the Razorpay short URL to redirect customer to.
+     */
+    createCheckout: async (planCode) => {
+        const response = await api.post('/api/subscriptions/checkout', { planCode });
+        return response.data;
+    },
 };
 
 export default subscriptionService;
