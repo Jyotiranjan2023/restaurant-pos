@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 
+import SuperAdminPlans from './pages/SuperAdminPlans'
+import SuperAdminTenantDetail from './pages/SuperAdminTenantDetail'
+import SuperAdminTenants from './pages/SuperAdminTenants'
 import Register from './pages/Register'
 import SuperAdminLayout from './components/SuperAdminLayout'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
@@ -38,16 +41,18 @@ export default function App() {
       <Route path="/super-admin/login" element={<SuperAdminLogin />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/register" element={<Register />} />
+     
       {/* Super admin protected routes */}
-      <Route element={
-        <SuperAdminProtectedRoute>
-          <SuperAdminLayout />
-        </SuperAdminProtectedRoute>
-      }>
-        <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
-        {/* /super-admin/tenants and /super-admin/plans will go here later */}
-      </Route>
-
+     <Route element={
+    <SuperAdminProtectedRoute>
+        <SuperAdminLayout />
+    </SuperAdminProtectedRoute>
+}>
+    <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+    <Route path="/super-admin/tenants" element={<SuperAdminTenants />} />
+    <Route path="/super-admin/tenants/:tenantId" element={<SuperAdminTenantDetail />} />
+    <Route path="/super-admin/plans" element={<SuperAdminPlans />} />
+</Route>
       {/* Tenant protected routes */}
       <Route
         element={

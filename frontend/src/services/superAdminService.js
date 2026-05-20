@@ -17,13 +17,14 @@ const superAdminService = {
     /**
      * List all tenants (paginated).
      */
-    listTenants: async (page = 0, size = 20) => {
-        const response = await superAdminApi.get('/api/super-admin/tenants', {
-            params: { page, size },
-        });
-        return response.data;
-    },
+    listTenants: async (page = 0, size = 20, search = null, status = null) => {
+    const params = { page, size };
+    if (search && search.trim()) params.search = search.trim();
+    if (status) params.status = status;
 
+    const response = await superAdminApi.get('/api/super-admin/tenants', { params });
+    return response.data;
+},
     /**
      * Get detail of one tenant.
      */
