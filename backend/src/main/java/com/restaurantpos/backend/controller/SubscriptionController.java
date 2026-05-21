@@ -1,5 +1,11 @@
 package com.restaurantpos.backend.controller;
 
+import com.restaurantpos.backend.dto.request.CancelSubscriptionRequest;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.restaurantpos.backend.security.UserPrincipal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -72,5 +78,22 @@ public class SubscriptionController {
         int reset = subscriptionService.resetMonthlyOrderCounters();
         String result = String.format("Counters reset for %d subscriptions", reset);
         return ResponseEntity.ok(new ApiResponse<>(true, result, null));
+    }
+    @PostMapping("/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<SubscriptionResponse>> cancelSubscription(
+            @RequestBody(required = false) CancelSubscriptionRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        String reason = request != null ? request.getReason() : null;
+        subscriptionService.cancelSubscription(principal.getTenantId(), reason);
+
+        // Return updated subscription info so frontend can refresh
+        SubscriptionResponse info = subscriptionService.getCurrentSubscription(principal.getTenantId());
+        return ResponseEntity.ok(new ApiResponse<>(
+            true,
+            "Subscription cancelled. You will retain access until your current billing period ends.",
+            info
+        ));
     }
 }

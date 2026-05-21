@@ -15,10 +15,12 @@ export default function SuperAdminLayout() {
     };
 
     const navItems = [
-        { to: '/super-admin/dashboard', label: 'Dashboard', icon: '📊' },
-        { to: '/super-admin/tenants', label: 'Tenants', icon: '🏢' },
-        { to: '/super-admin/plans', label: 'Plans', icon: '💳' },
-    ];
+    { to: '/super-admin/dashboard', label: 'Dashboard', icon: '📊' },
+    { to: '/super-admin/tenants', label: 'Tenants', icon: '🏪' },
+    { to: '/super-admin/plans', label: 'Plans', icon: '💳' },
+    { to: '/super-admin/audit-log', label: 'Audit Log', icon: '📋' }, 
+     { to: '/super-admin/super-admins', label: 'Super Admins', icon: '👤' }, // ← ADD THIS
+];
 
     return (
         <div className="flex min-h-screen bg-slate-50">

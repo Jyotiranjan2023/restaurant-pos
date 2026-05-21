@@ -88,6 +88,21 @@ const superAdminService = {
         localStorage.removeItem('superAdminToken');
         localStorage.removeItem('superAdminUser');
     },
+    getAuditLog: async (page = 0, size = 20) => {
+        const response = await superAdminApi.get('/api/super-admin/audit-log', {
+            params: { page, size },
+        });
+        return response.data;
+    },
+    listSuperAdmins: async () => {
+        const response = await superAdminApi.get('/api/super-admin/super-admins');
+        return response.data;
+    },
+
+    createSuperAdmin: async (data) => {
+        const response = await superAdminApi.post('/api/super-admin/super-admins', data);
+        return response.data;
+    },
 };
 
 export default superAdminService;

@@ -149,4 +149,15 @@ public class RazorpaySubscriptionService {
 
         return customerId;
     }
+    /**
+     * Cancel a Razorpay subscription.
+     * Uses cancel_at_cycle_end=true so customer keeps access through current billing cycle.
+     */
+    public void cancelRazorpaySubscription(String razorpaySubscriptionId) throws Exception {
+        org.json.JSONObject request = new org.json.JSONObject();
+        request.put("cancel_at_cycle_end", 1);   // 1 = cancel at end of cycle, 0 = immediate
+
+        razorpayClient.subscriptions.cancel(razorpaySubscriptionId, request);
+        log.info("Razorpay subscription {} marked for cancel at cycle end", razorpaySubscriptionId);
+    }
 }

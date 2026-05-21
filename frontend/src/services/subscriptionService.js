@@ -39,6 +39,10 @@ const subscriptionService = {
         const response = await api.post('/api/subscriptions/checkout', { planCode });
         return response.data;
     },
+    cancelSubscription: async (reason) => {
+        const response = await api.post('/api/subscriptions/cancel', { reason });
+        return response.data;
+    },
 };
 
 export default subscriptionService;

@@ -1,10 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../hooks/useSubscription';
+import subscriptionService from '../services/subscriptionService';
 
 const Subscription = () => {
-    const { subscription, loading, error } = useSubscription();
+    const { subscription, loading, error, refetch } = useSubscription();
     const navigate = useNavigate();
+
+    // Cancel modal state
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
+    const [cancelling, setCancelling] = useState(false);
+    const [cancelError, setCancelError] = useState(null);
+
+    const handleCancelConfirm = async () => {
+        setCancelError(null);
+        setCancelling(true);
+        try {
+            await subscriptionService.cancelSubscription(cancelReason.trim() || null);
+            setShowCancelModal(false);
+            setCancelReason('');
+            // Refresh subscription data
+            if (refetch) {
+                refetch();
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            setCancelError(err.response?.data?.message || 'Failed to cancel subscription');
+        } finally {
+            setCancelling(false);
+        }
+    };
 
     // Loading state — skeleton matches final layout
     if (loading) {
@@ -25,7 +52,6 @@ const Subscription = () => {
         );
     }
 
-    // Error state
     if (error) {
         return (
             <div className="p-4 sm:p-6 max-w-4xl mx-auto">
@@ -43,7 +69,6 @@ const Subscription = () => {
         );
     }
 
-    // No subscription found
     if (!subscription) {
         return (
             <div className="p-4 sm:p-6 max-w-4xl mx-auto">
@@ -54,10 +79,23 @@ const Subscription = () => {
         );
     }
 
+    // Is this subscription marked for cancellation but still has access?
+    const isPendingCancellation = subscription.cancelledAt && subscription.status !== 'CANCELLED';
+
     // Status banner config
     const getStatusBanner = () => {
         const status = subscription.status;
         const daysRemaining = subscription.daysRemaining;
+
+        // Pending cancellation takes priority over status-based banner
+        if (isPendingCancellation) {
+            return {
+                color: 'bg-amber-50 border-amber-300 text-amber-900',
+                icon: 'ℹ️',
+                title: 'Cancellation scheduled',
+                message: `You will retain access until ${formatDate(subscription.expiresAt)} (${daysRemaining} days). After that, your subscription will end.`,
+            };
+        }
 
         if (status === 'TRIAL') {
             return {
@@ -121,9 +159,19 @@ const Subscription = () => {
     };
 
     const banner = getStatusBanner();
+
     const showUpgradeButton = ['TRIAL', 'GRACE_PERIOD', 'SUSPENDED', 'CANCELLED'].includes(subscription.status)
         || subscription.planCode === 'BASIC'
         || subscription.planCode === 'PRO';
+
+    // Can this subscription be cancelled?
+    // - Not lifetime
+    // - Not already cancelled or pending cancellation
+    // - Not suspended or already-cancelled status
+    const canCancel = subscription.status !== 'LIFETIME_FREE'
+        && subscription.status !== 'CANCELLED'
+        && subscription.status !== 'SUSPENDED'
+        && !isPendingCancellation;
 
     return (
         <div className="p-4 sm:p-6 max-w-4xl mx-auto">
@@ -200,17 +248,26 @@ const Subscription = () => {
                 )}
             </div>
 
-            {/* Upgrade Button — now actually goes to /upgrade */}
-            {showUpgradeButton && (
-                <div className="mb-4 sm:mb-6">
+            {/* Action buttons */}
+            <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-3">
+                {showUpgradeButton && (
                     <button
                         onClick={() => navigate('/upgrade')}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 sm:px-6 rounded-lg shadow text-sm sm:text-base"
                     >
                         Choose Different Plan
                     </button>
-                </div>
-            )}
+                )}
+
+                {canCancel && (
+                    <button
+                        onClick={() => setShowCancelModal(true)}
+                        className="w-full bg-white border border-red-300 text-red-700 hover:bg-red-50 font-medium py-2.5 px-4 sm:px-6 rounded-lg text-sm sm:text-base"
+                    >
+                        Cancel Subscription
+                    </button>
+                )}
+            </div>
 
             {/* Information Section */}
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
@@ -222,8 +279,74 @@ const Subscription = () => {
                     <li>• Failed payments enter a 7-day grace period before suspension</li>
                     <li>• Your data is preserved during grace period and suspension</li>
                     <li>• You can change plans anytime</li>
+                    <li>• Cancellation takes effect at the end of your current billing period</li>
                 </ul>
             </div>
+
+            {/* Cancel Confirmation Modal */}
+            {showCancelModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/50"
+                        onClick={cancelling ? undefined : () => setShowCancelModal(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-md">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h2 className="text-lg font-bold text-gray-900">Cancel Subscription?</h2>
+                        </div>
+
+                        <div className="px-6 py-4">
+                            <p className="text-sm text-gray-700 mb-3">
+                                You'll keep access to all features until{' '}
+                                <strong>{formatDate(subscription.expiresAt)}</strong>.
+                                After that, your subscription will end and you won't be able to use the system.
+                            </p>
+                            <p className="text-sm text-gray-700 mb-4">
+                                You can subscribe again at any time.
+                            </p>
+
+                            <div className="mb-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Reason <span className="text-gray-400 font-normal">(optional)</span>
+                                </label>
+                                <textarea
+                                    value={cancelReason}
+                                    onChange={(e) => setCancelReason(e.target.value)}
+                                    rows={3}
+                                    placeholder="Help us improve — why are you cancelling?"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none"
+                                />
+                            </div>
+
+                            {cancelError && (
+                                <div className="bg-red-50 border border-red-200 rounded-md p-2 mt-3 text-sm text-red-800">
+                                    {cancelError}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex gap-2 justify-end">
+                            <button
+                                onClick={() => setShowCancelModal(false)}
+                                disabled={cancelling}
+                                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-md disabled:opacity-50"
+                            >
+                                Keep My Subscription
+                            </button>
+                            <button
+                                onClick={handleCancelConfirm}
+                                disabled={cancelling}
+                                className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+                            >
+                                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

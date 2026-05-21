@@ -1,5 +1,8 @@
 package com.restaurantpos.backend.service;
 
+import com.restaurantpos.backend.exception.BadRequestException;
+import com.restaurantpos.backend.exception.ResourceNotFoundException;
+import com.restaurantpos.backend.enums.SubscriptionStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 @Service
 @Transactional
 public class SubscriptionService {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SubscriptionService.class);
 	// 7-day free trial duration (as decided in architecture)
     private static final int TRIAL_DAYS = 7;
 
@@ -33,6 +37,8 @@ public class SubscriptionService {
     private SubscriptionPlanRepository planRepository;
     @Autowired
     private TenantRepository tenantRepository;
+    @Autowired
+    private RazorpaySubscriptionService razorpaySubscriptionService;
 
     // ========== READ OPERATIONS ==========
 
@@ -296,5 +302,47 @@ public class SubscriptionService {
             default:
                 return sub.getStatus().toString();
         }
+    }
+    @Transactional
+    public Subscription cancelSubscription(Long tenantId, String reason) {
+
+        Subscription sub = subscriptionRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found for tenant: " + tenantId));
+
+        // Validation: can't cancel certain states
+        if (sub.getStatus() == SubscriptionStatus.CANCELLED) {
+            throw new BadRequestException("Subscription is already cancelled");
+        }
+        if (sub.getStatus() == SubscriptionStatus.SUSPENDED) {
+            throw new BadRequestException("Cannot cancel a suspended subscription");
+        }
+        if (sub.getStatus() == SubscriptionStatus.LIFETIME_FREE) {
+            throw new BadRequestException("Lifetime free subscriptions cannot be cancelled by user");
+        }
+        if (sub.getCancelledAt() != null) {
+            throw new BadRequestException("Subscription is already scheduled for cancellation");
+        }
+
+        // Mark cancelled — status stays as-is (ACTIVE/TRIAL/GRACE)
+        // Daily scheduler will move it to CANCELLED when expires_at passes
+        sub.setCancelledAt(LocalDateTime.now());
+        sub.setCancelReason(reason != null ? reason.trim() : null);
+
+        // Cancel in Razorpay if there's a subscription there
+        if (sub.getRazorpaySubscriptionId() != null && !sub.getRazorpaySubscriptionId().isEmpty()) {
+            try {
+                razorpaySubscriptionService.cancelRazorpaySubscription(sub.getRazorpaySubscriptionId());
+                log.info("Cancelled Razorpay subscription {}", sub.getRazorpaySubscriptionId());
+            } catch (Exception e) {
+                // Don't block local cancellation if Razorpay call fails
+                log.error("Failed to cancel Razorpay subscription {} — local cancellation still proceeded",
+                        sub.getRazorpaySubscriptionId(), e);
+            }
+        }
+
+        Subscription saved = subscriptionRepository.save(sub);
+        log.info("Subscription cancelled for tenant {} (reason: {})", tenantId, reason);
+
+        return saved;
     }
 }

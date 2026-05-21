@@ -1,5 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 
+import SuperAdminManagement from './pages/SuperAdminManagement'
+import SuperAdminAuditLog from './pages/SuperAdminAuditLog'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import SuperAdminPlans from './pages/SuperAdminPlans'
 import SuperAdminTenantDetail from './pages/SuperAdminTenantDetail'
 import SuperAdminTenants from './pages/SuperAdminTenants'
@@ -41,6 +45,8 @@ export default function App() {
       <Route path="/super-admin/login" element={<SuperAdminLogin />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
      
       {/* Super admin protected routes */}
      <Route element={
@@ -52,6 +58,8 @@ export default function App() {
     <Route path="/super-admin/tenants" element={<SuperAdminTenants />} />
     <Route path="/super-admin/tenants/:tenantId" element={<SuperAdminTenantDetail />} />
     <Route path="/super-admin/plans" element={<SuperAdminPlans />} />
+    <Route path="/super-admin/audit-log" element={<SuperAdminAuditLog />} />
+    <Route path="/super-admin/super-admins" element={<SuperAdminManagement />} />
 </Route>
       {/* Tenant protected routes */}
       <Route
