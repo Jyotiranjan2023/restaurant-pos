@@ -1,5 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 
+import Landing from './pages/public/Landing'
+import Features from './pages/public/Features'
+import Pricing from './pages/public/Pricing'
+import FAQs from './pages/public/FAQs'
+
 import SuperAdminManagement from './pages/SuperAdminManagement'
 import SuperAdminAuditLog from './pages/SuperAdminAuditLog'
 import ForgotPassword from './pages/ForgotPassword'
@@ -32,6 +37,7 @@ import Profile from './pages/Profile'
 import Unauthorized from './pages/Unauthorized'
 import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
+import PasswordResetsAdmin from './pages/PasswordResetsAdmin'
 
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -40,27 +46,34 @@ import SuperAdminProtectedRoute from './components/SuperAdminProtectedRoute'
 export default function App() {
   return (
     <Routes>
+      {/* Public marketing pages */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/features" element={<Features />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/faqs" element={<FAQs />} />
+
       {/* Public auth routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/super-admin/login" element={<SuperAdminLogin />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-<Route path="/reset-password" element={<ResetPassword />} />
-     
+      <Route path="/reset-password" element={<ResetPassword />} />
+
       {/* Super admin protected routes */}
-     <Route element={
-    <SuperAdminProtectedRoute>
-        <SuperAdminLayout />
-    </SuperAdminProtectedRoute>
-}>
-    <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
-    <Route path="/super-admin/tenants" element={<SuperAdminTenants />} />
-    <Route path="/super-admin/tenants/:tenantId" element={<SuperAdminTenantDetail />} />
-    <Route path="/super-admin/plans" element={<SuperAdminPlans />} />
-    <Route path="/super-admin/audit-log" element={<SuperAdminAuditLog />} />
-    <Route path="/super-admin/super-admins" element={<SuperAdminManagement />} />
-</Route>
+      <Route element={
+        <SuperAdminProtectedRoute>
+          <SuperAdminLayout />
+        </SuperAdminProtectedRoute>
+      }>
+        <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+        <Route path="/super-admin/tenants" element={<SuperAdminTenants />} />
+        <Route path="/super-admin/tenants/:tenantId" element={<SuperAdminTenantDetail />} />
+        <Route path="/super-admin/plans" element={<SuperAdminPlans />} />
+        <Route path="/super-admin/audit-log" element={<SuperAdminAuditLog />} />
+        <Route path="/super-admin/super-admins" element={<SuperAdminManagement />} />
+      </Route>
+
       {/* Tenant protected routes */}
       <Route
         element={
@@ -80,6 +93,7 @@ export default function App() {
         <Route path="/bills" element={<ProtectedRoute allowedRoles={['ADMIN']}><Bills /></ProtectedRoute>} />
         <Route path="/subscription" element={<ProtectedRoute allowedRoles={['ADMIN']}><Subscription /></ProtectedRoute>} />
         <Route path="/upgrade" element={<ProtectedRoute allowedRoles={['ADMIN']}><Upgrade /></ProtectedRoute>} />
+        <Route path="/admin/password-resets" element={<ProtectedRoute allowedRoles={['ADMIN']}><PasswordResetsAdmin /></ProtectedRoute>} />
 
         <Route path="/pos" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><POS /></ProtectedRoute>} />
         <Route path="/tables" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><Tables /></ProtectedRoute>} />
@@ -93,11 +107,10 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
       </Route>
 
-      {/* Super admin path fallback — unknown /super-admin/* paths go to super admin login */}
       <Route path="/super-admin/*" element={<Navigate to="/super-admin/login" />} />
 
-      {/* Catch-all — everything else falls to tenant login. MUST be last. */}
-      <Route path="*" element={<Navigate to="/login" />} />
+      {/* Catch-all — unknown URLs go to landing page */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   )
 }

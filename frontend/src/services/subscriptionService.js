@@ -39,6 +39,29 @@ const subscriptionService = {
         const response = await api.post('/api/subscriptions/checkout', { planCode });
         return response.data;
     },
+
+    /**
+     * Create a one-time Razorpay Order (manual payment).
+     * Returns orderId, amount, currency, keyId — needed to open Razorpay widget.
+     */
+    createOrder: async (planCode) => {
+        const response = await api.post('/api/payments/create-order', { planCode });
+        return response.data;
+    },
+
+    /**
+     * Verify Razorpay payment after widget success.
+     * On success, backend activates the subscription for 30 days.
+     */
+    verifyPayment: async ({ planCode, razorpayOrderId, razorpayPaymentId, razorpaySignature }) => {
+        const response = await api.post('/api/payments/verify', {
+            planCode,
+            razorpayOrderId,
+            razorpayPaymentId,
+            razorpaySignature,
+        });
+        return response.data;
+    },
     cancelSubscription: async (reason) => {
         const response = await api.post('/api/subscriptions/cancel', { reason });
         return response.data;

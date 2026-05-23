@@ -41,18 +41,21 @@ public class PasswordResetService {
     private final TenantRepository tenantRepo;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     private final SecureRandom random = new SecureRandom();
 
     public PasswordResetService(PasswordResetRequestRepository resetRepo,
                                 UserRepository userRepo,
                                 TenantRepository tenantRepo,
                                 PasswordEncoder passwordEncoder,
-                                NotificationService notificationService) {
+                                NotificationService notificationService,
+                                EmailService emailService) {
         this.resetRepo = resetRepo;
         this.userRepo = userRepo;
         this.tenantRepo = tenantRepo;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     // ========== Public: User Requests Reset ==========
@@ -119,6 +122,18 @@ public class PasswordResetService {
         reset.setApprovedBy(approver);
 
         reset = resetRepo.save(reset);
+
+        // Email the reset code to the user
+        String userEmail = reset.getUser().getEmail();
+        if (userEmail != null && !userEmail.isEmpty()) {
+            emailService.sendPasswordResetEmail(
+                    userEmail,
+                    reset.getUser().getFullName() != null
+                            ? reset.getUser().getFullName()
+                            : reset.getUser().getUsername(),
+                    plainCode
+            );
+        }
 
         // Build response with the plain code (admin must communicate this to user)
         PasswordResetResponse response = toResponse(reset);
@@ -192,7 +207,7 @@ public class PasswordResetService {
             resetRepo.save(reset);
             throw new BadRequestException(
                     "Invalid reset code. Attempts remaining: " +
-                    (MAX_FAILED_ATTEMPTS - reset.getFailedAttempts()));
+                            (MAX_FAILED_ATTEMPTS - reset.getFailedAttempts()));
         }
 
         // Code valid — update password

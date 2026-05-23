@@ -96,4 +96,25 @@ public class SubscriptionController {
             info
         ));
     }
+    /**
+     * TEMPORARY TEST ENDPOINT — verify SMTP works.
+     * REMOVE AFTER TESTING.
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.restaurantpos.backend.service.EmailService emailService;
+
+    @PostMapping("/test/send-email")
+    public ResponseEntity<ApiResponse<String>> testSendEmail(
+            @RequestBody java.util.Map<String, String> body) {
+        String toEmail = body.get("toEmail");
+        if (toEmail == null || toEmail.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                new ApiResponse<>(false, "toEmail is required", null));
+        }
+        emailService.sendPasswordResetEmail(toEmail, "Test User", "ABC123");
+        return ResponseEntity.ok(
+            new ApiResponse<>(true,
+                "Email send triggered. Check inbox (and spam folder).",
+                null));
+    }
 }

@@ -345,4 +345,58 @@ public class SubscriptionService {
 
         return saved;
     }
+    /**
+     * Activate subscription after a successful manual one-time payment.
+     * Used when customer pays via Razorpay Orders API (not Subscriptions API).
+     *
+     * Behavior:
+     * - Changes plan to the chosen plan
+     * - Sets status to ACTIVE
+     * - Sets expires_at to 30 days from now
+     * - Resets grace period / trial fields
+     * - Stores Razorpay payment ID for audit
+     */
+    @Transactional
+    public Subscription activateAfterManualPayment(Long tenantId, String planCode, String razorpayPaymentId) {
+
+        Subscription sub = subscriptionRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Subscription not found for tenant: " + tenantId));
+
+        // Lifetime free tenants don't change
+        if (sub.getStatus() == SubscriptionStatus.LIFETIME_FREE) {
+            throw new BadRequestException("Lifetime free subscriptions cannot be modified");
+        }
+
+        // Find the chosen plan
+        SubscriptionPlan plan = planRepository.findByCode(planCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Plan not found: " + planCode));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusDays(30);
+
+        // Update subscription
+        sub.setPlanId(plan.getId());
+        sub.setStatus(SubscriptionStatus.ACTIVE);
+        sub.setStartedAt(now);
+        sub.setExpiresAt(expiresAt);
+
+        // Clear trial / grace / cancellation fields (fresh start)
+        sub.setTrialEndsAt(null);
+        sub.setGracePeriodEndsAt(null);
+        sub.setCancelledAt(null);
+        sub.setCancelReason(null);
+
+        // Store Razorpay payment reference for audit
+        // Reusing razorpaySubscriptionId field to store the payment_id
+        // (in Order mode there is no subscription, but we need a reference)
+        sub.setRazorpaySubscriptionId(razorpayPaymentId);
+
+        Subscription saved = subscriptionRepository.save(sub);
+
+        log.info("Subscription ACTIVATED via manual payment for tenant {} plan {} payment {} expires {}",
+                tenantId, planCode, razorpayPaymentId, expiresAt);
+
+        return saved;
+    }
 }

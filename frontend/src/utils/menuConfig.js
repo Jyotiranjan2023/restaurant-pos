@@ -14,6 +14,7 @@ export const menuConfig = [
   { path: '/bills',          label: 'Bills',             icon: '🧾', roles: ['ADMIN'] },
   { path: '/reports',        label: 'Reports',           icon: '📈', roles: ['ADMIN'] },
   { path: '/staff',          label: 'Staff',             icon: '👤', roles: ['ADMIN'] },
+  { path: '/admin/password-resets', label: 'Password Resets', icon: '🔐', roles: ['ADMIN'] },
 
   // KITCHEN
   { path: '/kitchen',        label: 'Kitchen Display',   icon: '👨‍🍳', roles: ['CHEF', 'ADMIN'] },

@@ -36,18 +36,78 @@ export default function Upgrade() {
   const planRank = { BASIC: 1, PRO: 2, ENTERPRISE: 3 }
 const handleChoose = async (planCode) => {
     try {
-        const res = await subscriptionService.createCheckout(planCode)
-        if (res.success && res.data?.shortUrl) {
-            // Redirect customer to Razorpay payment page
-            window.location.href = res.data.shortUrl
-        } else {
-            alert('Failed to start checkout. Please try again.')
-        }
+      // 1. Create order on backend
+      const res = await subscriptionService.createOrder(planCode)
+
+      if (!res.success || !res.data) {
+        alert('Failed to start payment. Please try again.')
+        return
+      }
+
+      const order = res.data
+
+      // 2. Check Razorpay script is loaded
+      if (!window.Razorpay) {
+        alert('Payment system not loaded. Please refresh the page and try again.')
+        return
+      }
+
+      // 3. Open Razorpay widget
+      const options = {
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Restaurant POS',
+        description: `Upgrade to ${order.planName} plan`,
+        order_id: order.orderId,
+        prefill: {
+          name: order.tenantName || '',
+          email: order.tenantEmail || '',
+        },
+        theme: {
+          color: '#2563eb',
+        },
+        handler: async function (response) {
+          // 4. Payment success — verify on backend
+          try {
+            const verifyRes = await subscriptionService.verifyPayment({
+              planCode: order.planCode,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            })
+
+            if (verifyRes.success) {
+              alert('Payment successful! Your subscription is now active.')
+              navigate('/subscription')
+            } else {
+              alert('Payment verification failed. Please contact support.')
+            }
+          } catch (err) {
+            console.error('Verification error:', err)
+            alert('Payment verification failed. Please contact support.')
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            console.log('Razorpay widget closed by user')
+          },
+        },
+      }
+
+      const rzp = new window.Razorpay(options)
+
+      rzp.on('payment.failed', function (response) {
+        console.error('Payment failed:', response.error)
+        alert('Payment failed: ' + (response.error?.description || 'Unknown error'))
+      })
+
+      rzp.open()
     } catch (err) {
-        const message = err.response?.data?.message || 'Checkout failed. Please try again.'
-        alert(message)
+      const message = err.response?.data?.message || 'Failed to start payment. Please try again.'
+      alert(message)
     }
-}
+  }
 
   if (loading) {
     return (
