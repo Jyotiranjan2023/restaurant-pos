@@ -1,126 +1,117 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { forgotPassword } from '../services/authService'
+import { Link } from 'react-router-dom'
+import api from '../services/api'
 
 export default function ForgotPassword() {
-  const navigate = useNavigate()
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [email, setEmail] = useState('')
+  const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm()
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError(null)
 
-  const onSubmit = async (data) => {
-    setError('')
-    setSuccess('')
+    if (!email.trim()) {
+      setError('Please enter your email address.')
+      return
+    }
+
     setLoading(true)
     try {
-      const res = await forgotPassword(Number(data.tenantId), data.username)
-      if (res.success) {
-        setSuccess(res.message || 'Reset request submitted. Please contact your administrator for the reset code.')
-      } else {
-        setError(res.message || 'Could not submit reset request')
-      }
+      await api.post('/api/auth/forgot-password', { email: email.trim().toLowerCase() })
+      setSubmitted(true)
     } catch (err) {
-      setError(err.response?.data?.message || 'Server error. Try again.')
+      setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white rounded-xl shadow-md p-8 w-full max-w-md text-center">
+          <div className="text-5xl mb-4">📧</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Check your email</h2>
+          <p className="text-gray-600 mb-2">
+            If <strong>{email}</strong> is registered as a restaurant admin,
+            you'll receive a 6-digit reset code shortly.
+          </p>
+          <p className="text-gray-500 text-sm mb-6">
+            The code expires in 30 minutes. Check your spam folder if you don't see it.
+          </p>
+          <Link
+            to="/reset-password"
+            className="block w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors mb-3"
+          >
+            Enter Reset Code →
+          </Link>
+          <Link to="/login" className="text-sm text-gray-500 hover:text-gray-700">
+            ← Back to login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 sm:p-8">
-
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="bg-white rounded-xl shadow-md p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="bg-orange-500 text-white text-2xl font-bold w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
-            P
+          <div className="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-2xl font-bold">P</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Forgot Password</h1>
-          <p className="text-gray-500 text-sm mt-1">Request a password reset code</p>
+          <h2 className="text-2xl font-bold text-gray-900">Forgot Password</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Enter your registered email to receive a reset code
+          </p>
         </div>
 
-        {/* Info banner — honest about the flow */}
-        <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs rounded-lg px-3 py-2 mb-5">
-          After submitting this form, please contact your restaurant administrator
-          to receive your 8-character reset code.
-        </div>
-
-        {/* Error / Success */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
             {error}
           </div>
         )}
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-4">
-            {success}
-          </div>
-        )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tenant ID <span className="text-red-500">*</span>
+              Email Address
             </label>
             <input
-              type="number"
-              placeholder="Enter your tenant ID"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              {...register('tenantId', { required: 'Tenant ID is required' })}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@restaurant.com"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              disabled={loading}
             />
-            {errors.tenantId && (
-              <p className="text-red-500 text-xs mt-1">{errors.tenantId.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Your username"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              {...register('username', { required: 'Username is required' })}
-            />
-            {errors.username && (
-              <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>
-            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading || success}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg disabled:opacity-60"
+            disabled={loading}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-lg transition-colors"
           >
-            {loading ? 'Submitting...' : 'Request Reset'}
+            {loading ? 'Sending...' : 'Send Reset Code'}
           </button>
         </form>
 
-        {/* Navigation links */}
-        <div className="text-center mt-6 pt-6 border-t border-gray-200 space-y-2">
-          <p className="text-sm text-gray-600">
-            Already have your reset code?{' '}
-            <Link to="/reset-password" className="text-orange-600 hover:text-orange-700 font-medium">
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-sm text-gray-500">
+            Already have a reset code?{' '}
+            <Link to="/reset-password" className="text-orange-500 hover:underline font-medium">
               Reset password
             </Link>
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-500">
             Remember your password?{' '}
-            <Link to="/login" className="text-orange-600 hover:text-orange-700 font-medium">
+            <Link to="/login" className="text-orange-500 hover:underline font-medium">
               Sign in
             </Link>
           </p>
         </div>
-
       </div>
     </div>
   )

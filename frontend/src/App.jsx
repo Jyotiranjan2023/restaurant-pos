@@ -37,7 +37,6 @@ import Profile from './pages/Profile'
 import Unauthorized from './pages/Unauthorized'
 import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
-import PasswordResetsAdmin from './pages/PasswordResetsAdmin'
 
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -93,7 +92,6 @@ export default function App() {
         <Route path="/bills" element={<ProtectedRoute allowedRoles={['ADMIN']}><Bills /></ProtectedRoute>} />
         <Route path="/subscription" element={<ProtectedRoute allowedRoles={['ADMIN']}><Subscription /></ProtectedRoute>} />
         <Route path="/upgrade" element={<ProtectedRoute allowedRoles={['ADMIN']}><Upgrade /></ProtectedRoute>} />
-        <Route path="/admin/password-resets" element={<ProtectedRoute allowedRoles={['ADMIN']}><PasswordResetsAdmin /></ProtectedRoute>} />
 
         <Route path="/pos" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><POS /></ProtectedRoute>} />
         <Route path="/tables" element={<ProtectedRoute allowedRoles={['ADMIN', 'WAITER']}><Tables /></ProtectedRoute>} />

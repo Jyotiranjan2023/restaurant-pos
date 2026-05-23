@@ -68,8 +68,9 @@ public class AuthService {
         admin.setFullName(req.getAdminFullName());
         admin.setRole(Role.ADMIN);
         admin.setTenant(tenant);
-        admin = userRepo.save(admin);
-
+        admin.setEmail(tenant.getEmail());  // ← moved BEFORE save
+        admin = userRepo.save(admin);       // ← now saves WITH email
+        
         log.info("Restaurant registered successfully: tenant={} ('{}'), admin user={} ('{}')",
                 tenant.getId(), tenant.getRestaurantName(),
                 admin.getId(), admin.getUsername());
