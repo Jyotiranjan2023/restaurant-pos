@@ -21,4 +21,6 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
 
     // Check if code already exists
     boolean existsByCode(String code);
+    
+    Optional<SubscriptionPlan> findByRazorpayPlanId(String razorpayPlanId);
 }

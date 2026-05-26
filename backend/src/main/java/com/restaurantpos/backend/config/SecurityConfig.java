@@ -49,7 +49,8 @@ public class SecurityConfig {
             		        "/api/auth/forgot-password",
             		        "/api/auth/reset-password",
             		        "/api/subscription-plans/public",
-            		        "/api/super-admin/login"
+            		        "/api/super-admin/login",
+            		        "/api/payments/webhook"
             		    ).permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 

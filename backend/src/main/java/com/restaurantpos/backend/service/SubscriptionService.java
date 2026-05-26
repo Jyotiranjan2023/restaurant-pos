@@ -94,10 +94,10 @@ public class SubscriptionService {
                     "Tenant not found with id: " + tenantId
                 ));
 
-        // Get ENTERPRISE plan (trials get full access to test all features)
-        SubscriptionPlan trialPlan = planRepository.findByCode("ENTERPRISE")
+     // Get BASIC plan for trial — motivates users to upgrade
+        SubscriptionPlan trialPlan = planRepository.findByCode("BASIC")
                 .orElseThrow(() -> new RuntimeException(
-                    "ENTERPRISE plan not found. Cannot create trial."
+                    "BASIC plan not found. Cannot create trial."
                 ));
 
         // Create trial subscription
@@ -396,6 +396,47 @@ public class SubscriptionService {
 
         log.info("Subscription ACTIVATED via manual payment for tenant {} plan {} payment {} expires {}",
                 tenantId, planCode, razorpayPaymentId, expiresAt);
+
+        return saved;
+    }
+    
+    @Transactional
+    public Subscription activateAfterSubscriptionPayment(
+            Long tenantId,
+            String razorpaySubscriptionId,
+            String razorpayPaymentId,
+            String razorpayPlanId){
+
+        Subscription sub = subscriptionRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Subscription not found for tenant: " + tenantId));
+
+        if (sub.getStatus() == SubscriptionStatus.LIFETIME_FREE) {
+            log.info("Skipping activation for lifetime free tenant {}", tenantId);
+            return sub;
+        }
+        SubscriptionPlan plan = planRepository          // ✅ correct field name
+                .findByRazorpayPlanId(razorpayPlanId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Plan not found for razorpay plan ID: " + razorpayPlanId));
+        sub.setPlanId(plan.getId());                    // ✅ pass Long not object // ✅ THIS updates plan_id in DB
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusDays(30);
+
+        sub.setStatus(SubscriptionStatus.ACTIVE);
+        sub.setStartedAt(now);
+        sub.setExpiresAt(expiresAt);
+        sub.setRazorpaySubscriptionId(razorpaySubscriptionId);
+        sub.setCancelledAt(null);
+        sub.setCancelReason(null);
+        sub.setTrialEndsAt(null);
+        sub.setGracePeriodEndsAt(null);
+
+        Subscription saved = subscriptionRepository.save(sub);
+
+        log.info("Subscription ACTIVATED via webhook for tenant {} sub {} payment {} expires {}",
+                tenantId, razorpaySubscriptionId, razorpayPaymentId, expiresAt);
 
         return saved;
     }
