@@ -6,6 +6,7 @@ import Pricing from './pages/public/Pricing'
 import FAQs from './pages/public/FAQs'
 
 import SuperAdminManagement from './pages/SuperAdminManagement'
+import SuperAdminSettings from './pages/SuperAdminSettings'
 import SuperAdminAuditLog from './pages/SuperAdminAuditLog'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -61,17 +62,18 @@ export default function App() {
 
       {/* Super admin protected routes */}
       <Route element={
-        <SuperAdminProtectedRoute>
-          <SuperAdminLayout />
-        </SuperAdminProtectedRoute>
-      }>
-        <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
-        <Route path="/super-admin/tenants" element={<SuperAdminTenants />} />
-        <Route path="/super-admin/tenants/:tenantId" element={<SuperAdminTenantDetail />} />
-        <Route path="/super-admin/plans" element={<SuperAdminPlans />} />
-        <Route path="/super-admin/audit-log" element={<SuperAdminAuditLog />} />
-        <Route path="/super-admin/super-admins" element={<SuperAdminManagement />} />
-      </Route>
+  <SuperAdminProtectedRoute>
+    <SuperAdminLayout />
+  </SuperAdminProtectedRoute>
+}>
+  <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+  <Route path="/super-admin/tenants" element={<SuperAdminTenants />} />
+  <Route path="/super-admin/tenants/:tenantId" element={<SuperAdminTenantDetail />} />
+  <Route path="/super-admin/plans" element={<SuperAdminPlans />} />
+  <Route path="/super-admin/audit-log" element={<SuperAdminAuditLog />} />
+  <Route path="/super-admin/super-admins" element={<SuperAdminManagement />} />
+  <Route path="/super-admin/settings" element={<SuperAdminSettings />} />  {/* ← ADD THIS */}
+</Route>
 
       {/* Tenant protected routes */}
       <Route

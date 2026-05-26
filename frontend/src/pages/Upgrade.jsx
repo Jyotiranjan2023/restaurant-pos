@@ -35,79 +35,66 @@ export default function Upgrade() {
   // Plan rank for comparing upgrade vs downgrade
   const planRank = { BASIC: 1, PRO: 2, ENTERPRISE: 3 }
 const handleChoose = async (planCode) => {
-    try {
-      // 1. Create order on backend
-      const res = await subscriptionService.createOrder(planCode)
+  try {
+    // 1. Create subscription on backend
+    const res = await subscriptionService.createCheckout(planCode)
 
-      if (!res.success || !res.data) {
-        alert('Failed to start payment. Please try again.')
-        return
-      }
-
-      const order = res.data
-
-      // 2. Check Razorpay script is loaded
-      if (!window.Razorpay) {
-        alert('Payment system not loaded. Please refresh the page and try again.')
-        return
-      }
-
-      // 3. Open Razorpay widget
-      const options = {
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'Restaurant POS',
-        description: `Upgrade to ${order.planName} plan`,
-        order_id: order.orderId,
-        prefill: {
-          name: order.tenantName || '',
-          email: order.tenantEmail || '',
-        },
-        theme: {
-          color: '#2563eb',
-        },
-        handler: async function (response) {
-          // 4. Payment success — verify on backend
-          try {
-            const verifyRes = await subscriptionService.verifyPayment({
-              planCode: order.planCode,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            })
-
-            if (verifyRes.success) {
-              alert('Payment successful! Your subscription is now active.')
-              navigate('/subscription')
-            } else {
-              alert('Payment verification failed. Please contact support.')
-            }
-          } catch (err) {
-            console.error('Verification error:', err)
-            alert('Payment verification failed. Please contact support.')
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            console.log('Razorpay widget closed by user')
-          },
-        },
-      }
-
-      const rzp = new window.Razorpay(options)
-
-      rzp.on('payment.failed', function (response) {
-        console.error('Payment failed:', response.error)
-        alert('Payment failed: ' + (response.error?.description || 'Unknown error'))
-      })
-
-      rzp.open()
-    } catch (err) {
-      const message = err.response?.data?.message || 'Failed to start payment. Please try again.'
-      alert(message)
+    if (!res.success || !res.data) {
+      alert('Failed to start payment. Please try again.')
+      return
     }
+
+    const checkout = res.data
+
+    // 2. Check Razorpay script is loaded
+    if (!window.Razorpay) {
+      alert('Payment system not loaded. Please refresh the page and try again.')
+      return
+    }
+
+    // 3. Guard — stop if key is missing
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID
+    if (!razorpayKey) {
+      alert('Payment configuration missing. Please contact support.')
+      return
+    }
+
+    // 4. Open Razorpay widget
+    const options = {
+      key: razorpayKey,
+      subscription_id: checkout.razorpaySubscriptionId,
+      name: 'Restaurant POS',
+      description: `Upgrade to ${checkout.planName} plan`,
+      prefill: {
+        email: checkout.tenantEmail || '',
+      },
+      theme: {
+        color: '#2563eb',
+      },
+      handler: async function (response) {
+        // ✅ Payment captured — webhook activates subscription
+        navigate('/subscription')
+      },
+      modal: {
+        ondismiss: function () {
+          // user closed the widget — do nothing
+        },
+      },
+    }
+
+    const rzp = new window.Razorpay(options)
+
+    rzp.on('payment.failed', function (response) {
+      alert('Payment failed: ' + (response.error?.description || 'Unknown error'))
+    })
+
+    rzp.open()
+
+  } catch (err) {
+    const message = err.response?.data?.message || 'Failed to start payment. Please try again.'
+    alert(message)
   }
+}
 
   if (loading) {
     return (

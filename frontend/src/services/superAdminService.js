@@ -1,10 +1,8 @@
 import superAdminApi from './superAdminApi';
 
 const superAdminService = {
-
     /**
      * Login as super admin.
-     * Returns full response so caller can store token + user data.
      */
     login: async (username, password) => {
         const response = await superAdminApi.post('/api/super-admin/login', {
@@ -18,13 +16,13 @@ const superAdminService = {
      * List all tenants (paginated).
      */
     listTenants: async (page = 0, size = 20, search = null, status = null) => {
-    const params = { page, size };
-    if (search && search.trim()) params.search = search.trim();
-    if (status) params.status = status;
+        const params = { page, size };
+        if (search && search.trim()) params.search = search.trim();
+        if (status) params.status = status;
+        const response = await superAdminApi.get('/api/super-admin/tenants', { params });
+        return response.data;
+    },
 
-    const response = await superAdminApi.get('/api/super-admin/tenants', { params });
-    return response.data;
-},
     /**
      * Get detail of one tenant.
      */
@@ -32,13 +30,15 @@ const superAdminService = {
         const response = await superAdminApi.get(`/api/super-admin/tenants/${tenantId}`);
         return response.data;
     },
-/**
+
+    /**
      * Get dashboard stats.
      */
     getStats: async () => {
         const response = await superAdminApi.get('/api/super-admin/stats');
         return response.data;
     },
+
     /**
      * Suspend a tenant.
      */
@@ -60,7 +60,6 @@ const superAdminService = {
         );
         return response.data;
     },
-    
 
     /**
      * Convert tenant to LIFETIME_FREE.
@@ -88,12 +87,14 @@ const superAdminService = {
         localStorage.removeItem('superAdminToken');
         localStorage.removeItem('superAdminUser');
     },
+
     getAuditLog: async (page = 0, size = 20) => {
         const response = await superAdminApi.get('/api/super-admin/audit-log', {
             params: { page, size },
         });
         return response.data;
     },
+
     listSuperAdmins: async () => {
         const response = await superAdminApi.get('/api/super-admin/super-admins');
         return response.data;
@@ -101,6 +102,45 @@ const superAdminService = {
 
     createSuperAdmin: async (data) => {
         const response = await superAdminApi.post('/api/super-admin/super-admins', data);
+        return response.data;
+    },
+
+    // ── Settings ────────────────────────────────────────────────────
+
+    /**
+     * GET /api/super-admin/settings
+     * Fetch all current platform settings.
+     */
+    getSettings: async () => {
+        const response = await superAdminApi.get('/api/super-admin/settings');
+        return response.data;
+    },
+
+    /**
+     * PUT /api/super-admin/settings
+     * Save updated settings to backend.
+     */
+    updateSettings: async (data) => {
+        const response = await superAdminApi.put('/api/super-admin/settings', data);
+        return response.data;
+    },
+
+    /**
+     * POST /api/super-admin/settings/change-password
+     */
+    changePassword: async (currentPassword, newPassword) => {
+        const response = await superAdminApi.post('/api/super-admin/settings/change-password', {
+            currentPassword,
+            newPassword,
+        });
+        return response.data;
+    },
+
+    /**
+     * POST /api/super-admin/settings/revoke-sessions
+     */
+    revokeAllSessions: async () => {
+        const response = await superAdminApi.post('/api/super-admin/settings/revoke-sessions');
         return response.data;
     },
 };
