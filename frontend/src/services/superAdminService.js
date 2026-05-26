@@ -143,6 +143,17 @@ const superAdminService = {
         const response = await superAdminApi.post('/api/super-admin/settings/revoke-sessions');
         return response.data;
     },
+
+    // ── Revenue ─────────────────────────────────────────────────────
+
+    /**
+     * GET /api/super-admin/revenue
+     * Fetch full revenue dashboard data.
+     */
+    getRevenue: async () => {
+        const response = await superAdminApi.get('/api/super-admin/revenue');
+        return response.data;
+    },
 };
 
 export default superAdminService;

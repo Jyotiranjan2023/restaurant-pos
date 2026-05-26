@@ -4,6 +4,8 @@ import Landing from './pages/public/Landing'
 import Features from './pages/public/Features'
 import Pricing from './pages/public/Pricing'
 import FAQs from './pages/public/FAQs'
+import SuperAdminRevenue from './pages/SuperAdminRevenue';
+
 
 import SuperAdminManagement from './pages/SuperAdminManagement'
 import SuperAdminSettings from './pages/SuperAdminSettings'
@@ -73,6 +75,7 @@ export default function App() {
   <Route path="/super-admin/audit-log" element={<SuperAdminAuditLog />} />
   <Route path="/super-admin/super-admins" element={<SuperAdminManagement />} />
   <Route path="/super-admin/settings" element={<SuperAdminSettings />} />  {/* ← ADD THIS */}
+  <Route path="/super-admin/revenue" element={<SuperAdminRevenue />} />
 </Route>
 
       {/* Tenant protected routes */}
