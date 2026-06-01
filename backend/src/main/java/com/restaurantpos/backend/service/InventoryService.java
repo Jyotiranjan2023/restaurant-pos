@@ -56,8 +56,7 @@ this.notificationService = notificationService;   // ← NEW
     public IngredientResponse createIngredient(IngredientRequest req) {
         UserPrincipal principal = TenantContext.getCurrentUser();
         Long tenantId = principal.getTenantId();
-
-        if (ingredientRepo.existsByNameAndTenantId(req.getName(), tenantId))
+        if (ingredientRepo.existsByNameAndTenantIdAndActiveTrue(req.getName(), tenantId))
             throw new BadRequestException("Ingredient '" + req.getName() + "' already exists");
 
         Tenant tenant = tenantRepo.findById(tenantId)
@@ -106,7 +105,8 @@ this.notificationService = notificationService;   // ← NEW
 
         // If name changing, check duplicates
         if (!ing.getName().equals(req.getName()) &&
-            ingredientRepo.existsByNameAndTenantId(req.getName(), tenantId)) {
+        		ingredientRepo.existsByNameAndTenantIdAndActiveTrue(req.getName(), tenantId)
+) {
             throw new BadRequestException("Ingredient '" + req.getName() + "' already exists");
         }
 

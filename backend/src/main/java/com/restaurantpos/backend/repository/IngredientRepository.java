@@ -15,6 +15,7 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Long> {
     Optional<Ingredient> findByIdAndTenantId(Long id, Long tenantId);
 
     boolean existsByNameAndTenantId(String name, Long tenantId);
+    boolean existsByNameAndTenantIdAndActiveTrue(String name, Long tenantId);
 
     @Query("SELECT i FROM Ingredient i " +
            "WHERE i.tenant.id = :tenantId AND i.active = true " +

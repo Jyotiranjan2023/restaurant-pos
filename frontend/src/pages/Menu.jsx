@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard'
 import Modal from '../components/Modal'
 import ProductForm from '../components/ProductForm'
 import ConfirmDialog from '../components/ConfirmDialog'
+import RecipeModal from '../components/RecipeModal'
 import {
   createProduct,
   updateProduct,
@@ -15,7 +16,7 @@ import {
 } from '../services/productService'
 
 export default function Menu() {
- const { categories, loading: catLoading, refetch: refetchCategories } = useCategories()
+  const { categories, loading: catLoading, refetch: refetchCategories } = useCategories()
   const { products, loading: prodLoading, refetch } = useProducts()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -26,6 +27,7 @@ export default function Menu() {
   const [saving, setSaving] = useState(false)
 
   const [productToDelete, setProductToDelete] = useState(null)
+  const [recipeProduct, setRecipeProduct] = useState(null)
 
   const [feedback, setFeedback] = useState({ type: '', message: '' })
 
@@ -33,9 +35,7 @@ export default function Menu() {
     return products.filter((p) => {
       const matchesCategory =
         selectedCategoryId === 'all' || p.categoryId === Number(selectedCategoryId)
-      const matchesSearch = p.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase())
       return matchesCategory && matchesSearch
     })
   }, [products, selectedCategoryId, searchTerm])
@@ -55,76 +55,43 @@ export default function Menu() {
     setIsFormOpen(true)
   }
 
-  // Main submit handler — handles 4 cases:
-  // 1. Create + no image → just create
-  // 2. Create + image → create, then upload (don't fail product if upload fails)
-  // 3. Update + new image → update, then upload
-  // 4. Update + remove image → update, then delete image
   const handleSubmit = async (formData, imageInfo) => {
     setSaving(true)
     const { file, removeImage } = imageInfo
-
     try {
       let savedProduct
-
-      // Step 1: Save product fields
       if (editingProduct) {
         const res = await updateProduct(editingProduct.id, formData)
-        if (!res.success) {
-          showFeedback('error', res.message || 'Update failed')
-          setSaving(false)
-          return
-        }
+        if (!res.success) { showFeedback('error', res.message || 'Update failed'); setSaving(false); return }
         savedProduct = res.data
       } else {
         const res = await createProduct(formData)
-        if (!res.success) {
-          showFeedback('error', res.message || 'Create failed')
-          setSaving(false)
-          return
-        }
+        if (!res.success) { showFeedback('error', res.message || 'Create failed'); setSaving(false); return }
         savedProduct = res.data
       }
 
-      // Step 2: Handle image
       if (file) {
-        // Upload new image
         try {
           const imgRes = await uploadProductImage(savedProduct.id, file)
-          if (imgRes.success) {
-            showFeedback(
-              'success',
-              editingProduct ? 'Product updated with image' : 'Product created with image'
-            )
-          } else {
-            showFeedback(
-              'warning',
-              `Product saved but image upload failed: ${imgRes.message}. You can retry from the card.`
-            )
-          }
-        } catch (err) {
-          showFeedback(
-            'warning',
-            `Product saved but image upload failed: ${err.response?.data?.message || 'Server error'}. You can retry from the card.`
+          showFeedback(imgRes.success
+            ? 'success'
+            : 'warning',
+            imgRes.success
+              ? (editingProduct ? 'Product updated with image' : 'Product created with image')
+              : `Product saved but image upload failed: ${imgRes.message}`
           )
+        } catch (err) {
+          showFeedback('warning', `Product saved but image upload failed: ${err.response?.data?.message || 'Server error'}`)
         }
       } else if (removeImage && editingProduct?.imageUrl) {
-        // Remove existing image
         try {
           await removeProductImage(savedProduct.id)
           showFeedback('success', 'Product updated and image removed')
         } catch (err) {
-          showFeedback(
-            'warning',
-            `Product saved but image removal failed: ${err.response?.data?.message || 'Server error'}.`
-          )
+          showFeedback('warning', `Product saved but image removal failed: ${err.response?.data?.message || 'Server error'}`)
         }
       } else {
-        // No image change
-        showFeedback(
-          'success',
-          editingProduct ? 'Product updated' : 'Product created'
-        )
+        showFeedback('success', editingProduct ? 'Product updated' : 'Product created')
       }
 
       setIsFormOpen(false)
@@ -140,12 +107,8 @@ export default function Menu() {
     if (!productToDelete) return
     try {
       const res = await deleteProduct(productToDelete.id)
-      if (res.success) {
-        showFeedback('success', 'Product deleted')
-        refetch()
-      } else {
-        showFeedback('error', res.message || 'Delete failed')
-      }
+      if (res.success) { showFeedback('success', 'Product deleted'); refetch() }
+      else showFeedback('error', res.message || 'Delete failed')
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Server error')
     } finally {
@@ -156,26 +119,18 @@ export default function Menu() {
   const handleToggle = async (product) => {
     try {
       const res = await toggleAvailability(product.id, !product.available)
-      if (res.success) {
-        refetch()
-      } else {
-        showFeedback('error', res.message || 'Toggle failed')
-      }
+      if (res.success) refetch()
+      else showFeedback('error', res.message || 'Toggle failed')
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Server error')
     }
   }
 
-  // Quick image upload from card camera icon
   const handleQuickImageUpload = async (product, file) => {
     try {
       const res = await uploadProductImage(product.id, file)
-      if (res.success) {
-        showFeedback('success', `Image updated for ${product.name}`)
-        refetch()
-      } else {
-        showFeedback('error', res.message || 'Image upload failed')
-      }
+      if (res.success) { showFeedback('success', `Image updated for ${product.name}`); refetch() }
+      else showFeedback('error', res.message || 'Image upload failed')
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Upload failed')
     }
@@ -191,7 +146,7 @@ export default function Menu() {
 
   const feedbackStyle = {
     success: 'bg-green-50 text-green-700 border-green-200',
-    error: 'bg-red-50 text-red-700 border-red-200',
+    error:   'bg-red-50 text-red-700 border-red-200',
     warning: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   }
 
@@ -201,9 +156,7 @@ export default function Menu() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Menu Management</h1>
-          <p className="text-gray-500 text-sm">
-            Manage your restaurant's products and pricing.
-          </p>
+          <p className="text-gray-500 text-sm">Manage your restaurant's products and pricing.</p>
         </div>
         <button
           onClick={handleAddNew}
@@ -215,11 +168,7 @@ export default function Menu() {
 
       {/* Feedback toast */}
       {feedback.message && (
-        <div
-          className={`mb-4 px-4 py-2 rounded-lg text-sm border ${
-            feedbackStyle[feedback.type] || feedbackStyle.success
-          }`}
-        >
+        <div className={`mb-4 px-4 py-2 rounded-lg text-sm border ${feedbackStyle[feedback.type] || feedbackStyle.success}`}>
           {feedback.message}
         </div>
       )}
@@ -233,14 +182,11 @@ export default function Menu() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
-
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setSelectedCategoryId('all')}
             className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
-              selectedCategoryId === 'all'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              selectedCategoryId === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             All ({products.length})
@@ -252,9 +198,7 @@ export default function Menu() {
                 key={cat.id}
                 onClick={() => setSelectedCategoryId(cat.id)}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
-                  selectedCategoryId === cat.id
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  selectedCategoryId === cat.id ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {cat.name} ({count})
@@ -264,7 +208,7 @@ export default function Menu() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Product grid */}
       {filteredProducts.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
           <p className="text-gray-500">No products found.</p>
@@ -279,12 +223,13 @@ export default function Menu() {
               onDelete={setProductToDelete}
               onToggleAvailability={handleToggle}
               onQuickImageUpload={handleQuickImageUpload}
+              onRecipe={setRecipeProduct}
             />
           ))}
         </div>
       )}
 
-      {/* Form Modal */}
+      {/* Product form modal */}
       <Modal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
@@ -292,19 +237,16 @@ export default function Menu() {
         size="md"
       >
         <ProductForm
-  initialData={editingProduct}
-  categories={categories}
-  onCategoryCreated={() => {
-    refetchCategories()
-    showFeedback('success', 'Category created')
-  }}
-  onSubmit={handleSubmit}
-  onCancel={() => setIsFormOpen(false)}
-  loading={saving}
-/>
+          initialData={editingProduct}
+          categories={categories}
+          onCategoryCreated={() => { refetchCategories(); showFeedback('success', 'Category created') }}
+          onSubmit={handleSubmit}
+          onCancel={() => setIsFormOpen(false)}
+          loading={saving}
+        />
       </Modal>
 
-      {/* Delete Confirm */}
+      {/* Delete confirm */}
       <ConfirmDialog
         isOpen={!!productToDelete}
         onClose={() => setProductToDelete(null)}
@@ -314,6 +256,14 @@ export default function Menu() {
         confirmText="Yes, Delete"
         danger
       />
+
+      {/* Recipe modal */}
+      {recipeProduct && (
+        <RecipeModal
+          product={recipeProduct}
+          onClose={() => setRecipeProduct(null)}
+        />
+      )}
     </div>
   )
 }

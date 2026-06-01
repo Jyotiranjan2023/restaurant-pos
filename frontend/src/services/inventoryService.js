@@ -40,3 +40,21 @@ export const restockIngredient = async (id, payload) => {
   const res = await api.post(`/api/ingredients/${id}/restock`, payload);
   return res.data.data;
 };
+
+export const fetchRecipe = async (productId) => {
+  const res = await api.get(`/api/products/${productId}/recipe`);
+  return res.data.data;
+};
+
+export const addRecipeItem = async (productId, ingredientId, quantityPerServing) => {
+  const res = await api.post(`/api/products/${productId}/recipe`, {
+    ingredientId,
+    quantityPerServing,
+  });
+  return res.data.data;
+};
+
+export const removeRecipeItem = async (productId, ingredientId) => {
+  const res = await api.delete(`/api/products/${productId}/recipe/${ingredientId}`);
+  return res.data;
+};
